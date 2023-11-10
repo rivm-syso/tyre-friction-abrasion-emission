@@ -838,6 +838,8 @@ probX |> summary()
 
 ```{r data total}
 # registerDoParallel(10)  # use multicore, set to the number of ou
+library(sensitivity)
+library(ks)
 
 FrWrk_type_combi <- c(c('Total FrWrk factor (J/m)','Acceleration FrWrk factor (J/m)','Deceleration FrWrk factor (J/m)', 'Constant FrWrk factor (J/m)','Cornering FrWrk factor (J/m)','Cornering FrWrk (J)','Acceleration FrWrk (J)','Deceleration FrWrk (J)','Constant FrWrk (J)'))
 
