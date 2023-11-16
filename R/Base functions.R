@@ -1,3 +1,5 @@
+# Anne
+
 #### Friction force functions ####
 # Roll resistance force in N
 f_roll_force <- function(c_roll, m_vehicle, grav_constant) {c_roll*m_vehicle*grav_constant}
