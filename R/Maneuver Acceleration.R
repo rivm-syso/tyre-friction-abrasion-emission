@@ -1,3 +1,25 @@
+#' Acceleration maneuver 
+#' 
+#' This function is used to calculate the distance in m and friction work in N 
+#' of an acceleration maneuver on dry asphalt. These values are returned in a list. 
+#' 
+#' @param sector_velocity_ms Vehicle velocity at the middle of the sector (m/s)
+#' @param sector_start_velocity_ms Vehicle velocity at the start of the sector (m/s)
+#' @param frac_driver_comfort_max_accelaration Comfortable acceleration constant (unitless)
+#' @param c_accel_max Maximum acceleration 
+#' @param m_vehicle Mass of the vehicle (kg)
+#' @param m_rotate Mass of the rotating parts (kg)
+#' @param c_drag Drag coefficient of the vehicle (unitless)
+#' @param A_vehicle Vehicle frontal area (m^2)
+#' @param rho_air Density of air (kg/m^3) 
+#' @param v_wind Wind velocity (m/s)
+#' @param c_roll Roll coefficient of the tyre (kg/kg)
+#' @param grav_constant Gravitational constant (m/s^2)
+#' @param sector_alpha_slope Slope of the sector (%)
+#' @param optimal_slip_dry_asphalt Optimal slip ratio between tyre and track (unitless)
+#' @param x_slip_long_force_dry_asphalt Longitudinal slip force on dry asphalt (N)
+#' @param accel_force_end_maneuver_1 ???
+
 f_acc_dry <- function(sector_velocity_ms,
                       sector_start_velocity_ms,
                       frac_driver_comfort_max_accelaration,
@@ -17,10 +39,11 @@ f_acc_dry <- function(sector_velocity_ms,
   
   
   maneuver_1 = "acceleration on dry asphalt"
+  
   v_start_acceleration_maneuver_1 = pmin(sector_velocity_ms,sector_start_velocity_ms) 
   
-  
   v_end_acceleration_maneuver_1 = sector_velocity_ms
+  
   v_average_maneuver_1 = (v_start_acceleration_maneuver_1 + v_end_acceleration_maneuver_1)/2
   
   c_accel_maneuver_1 <- frac_driver_comfort_max_accelaration * c_accel_max
