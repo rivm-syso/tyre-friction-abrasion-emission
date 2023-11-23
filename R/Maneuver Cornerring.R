@@ -1,3 +1,25 @@
+#' Cornering maneuver 
+#' 
+#' This function is used to calculate the distance in m and longitudinal and latitudinal 
+#' friction work in N of a cornering maneuver on dry asphalt. These values are returned in a list. 
+#'
+#'@param sector_velocity_ms Vehicle velocity at the middle of the sector (m/s)
+#'@param sector_corner_radius Radius of the corner (m)
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param sector_bank_slope Bank slope (%)
+#'@param sector_corner_angle Angle of the corner (degrees)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param A_vehicle Vehicle frontal area (m^2)
+#'@param rho_air Density of air (kg/m^3)
+#'@param v_wind Wind speed (m/s)
+#'@param c_roll Roll coefficient of the tyre (kg/kg)
+#'@param sector_alpha_slope Slope (%)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_full_brake_dry_asphalt Deceleration constant of the tyre at full wheel lock on dry asphalt (m/s^2)
+#'@param optimal_slip_dry_sphalt Slip ratio between tyre and track (unitless)
+#'@param x_slip_long_force_dry_asphalt Longitudinal slip force on dry asphalt (N)
+
 f_corn_dry <- function(sector_velocity_ms,
                        sector_corner_radius,
                        m_vehicle,
@@ -14,48 +36,65 @@ f_corn_dry <- function(sector_velocity_ms,
                        c_full_brake_dry_asphalt,
                        optimal_slip_dry_asphalt,
                        x_slip_long_force_dry_asphalt){  
+  
   # latitudinal friction work during cornering
   maneuver_4 = "cornering"
+  
+  # centripetal force
   centripet_force_maneuver_4 = f_centripet_force(m_vehicle = m_vehicle, 
                                                  v_vehicle = sector_velocity_ms, 
                                                  r_corner = sector_corner_radius)
+  # bank force
   bank_force_maneuver_4 = f_bank_force(grav_constant = grav_constant,
                                        alpha_bank_slope = sector_bank_slope, 
                                        m_vehicle = m_vehicle)
+  # lateral slip force
   slip_lateral_maneuver_4 = f_slip_lateral(optimal_slip = optimal_slip_dry_asphalt, 
                                            x_slip_lat_force = 7*x_slip_long_force_dry_asphalt, 
                                            lat_force = centripet_force_maneuver_4 + 
                                              bank_force_maneuver_4)
+  
+  # distance of the maneuver
   distance_maneuver_4 = f_corner_distance(corner_angle = sector_corner_angle , 
                                           r_corner = sector_corner_radius)
+  
+  # latitudinal friction work 
   latitude_friction_work_maneuver_4 = f_latitude_friction_work(lat_force = centripet_force_maneuver_4 + 
                                                                  bank_force_maneuver_4, 
                                                                slip = slip_lateral_maneuver_4, 
                                                                distance = distance_maneuver_4)
   
-  
+  # drag force
   drag_force_maneuver_3 = f_drag_force(c_drag, 
                                        A_vehicle, 
                                        rho_air, 
                                        v_vehicle = sector_velocity_ms, 
                                        v_wind)
+  
+  # roll force
   roll_force_maneuver_3 = f_roll_force(c_roll, 
                                        m_vehicle, 
                                        grav_constant)
+  
   ## the slope force (in case of uphill driving)
   slope_force_maneuver_3 = f_slope_force(m_vehicle = m_vehicle, 
                                          grav_constant = grav_constant, 
                                          alpha_slope = sector_alpha_slope)
+  
   ## the brake force (in case downhill driving downhill using the brakes remain under the speed limit)
   brake_force_maneuver_3 = pmax(0,-(drag_force_maneuver_3 + roll_force_maneuver_3 +slope_force_maneuver_3)) 
+  
   ## Slip during constant speed driving on dry asphalt
   c_decel_brake_maneuver_3 = pmin(c_full_brake_dry_asphalt , 
                                   f_c_decel_inert(Decel_force = brake_force_maneuver_3, 
                                                   m_vehicle = m_vehicle, 
                                                   m_rotate = m_rotate))
+  
+  # slip during brake maneuver
   slip_brake_maneuver_3 = f_slip_brake(c_decel_brake = c_decel_brake_maneuver_3, 
                                        c_full_brake = c_full_brake_dry_asphalt)
   
+  # 
   slip_maneuver_3 = pmin(1,
                          f_slip_wheelspin(optimal_slip = optimal_slip_dry_asphalt, 
                                           x_slip_long_force = x_slip_long_force_dry_asphalt, 
@@ -72,9 +111,7 @@ f_corn_dry <- function(sector_velocity_ms,
                                                                  slip = slip_maneuver_3, 
                                                                  distance = distance_maneuver_4)
   
-  list(maneuver=maneuver_4,
-       distance=distance_maneuver_4,
-       friction_work_longitude=longitude_friction_work_maneuver_4,
-       friction_work_latitude = latitude_friction_work_maneuver_4) 
+  # create a list containing the name of the maneuver, the distance of the maneuver, longitudinal friction work and latitudinal friction work
+  list(maneuver = maneuver_4, distance = distance_maneuver_4, friction_work_longitude = longitude_friction_work_maneuver_4, friction_work_latitude = latitude_friction_work_maneuver_4) 
   
 }
