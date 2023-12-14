@@ -1,0 +1,220 @@
+---
+title: "Some Figures for analysis"
+author: "Quik"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+all.forces <- list()
+all.multiplications <- list()
+source("R/IDIADA_runin.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$'0_runin' <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$'0_runin' <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+source("R/urban i.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$i_urban <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$i_urban <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/urban ii.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$ii_urban <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$ii_urban <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/urban iii.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$iii_urban <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$iii_urban <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/urban iv.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$iv_urban <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$iv_urban <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/IDIADA_rural_v.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$v_rural <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$v_rural <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/IDIADA_rural_vi.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$vi_rural <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$vi_rural <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/IDIADA_rural_vii.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$vii_rural <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$vii_rural <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+source("R/IDIADA_motorway_viii.R")
+
+grep("friction_work_sector",objects(),value = TRUE)
+
+all.forces$viii_motorway <- mget(paste0(grep("friction_work_sector",objects(),value = TRUE)))
+all.multiplications$viii_motorway <- mget(paste0(grep("repeats",objects(),value = TRUE)))
+
+rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
+
+```
+
+Make data frame for figure based on calculation data all.forces above:
+```{r}
+
+long.data <- all.forces |> enframe() |> unnest_longer(value) |> unnest(cols = c(value))
+
+long.mult <- all.multiplications |> enframe() |> unnest_longer(value) |> 
+  unnest(cols = c(value)) |> rename(repeats = value,
+                                    sector = value_id) 
+
+long.mult <- long.mult  |> mutate(sector = str_remove_all(sector, pattern = "_repeats"))
+
+long.data <- long.data |> 
+  mutate(
+    sector = paste0("sector",substr(value_id,nchar(value_id)-1,nchar(value_id))),
+    manuevre = case_when(str_detect(value_id,"accel") ~ "acceleration",
+                         str_detect(value_id,"const") ~ "constant speed",
+                         str_detect(value_id,"decel") ~ "breaking",
+                         str_detect(value_id,"corner") ~ "cornering")
+  )
+
+
+allfforcedata <- left_join(long.data,long.mult) |>   mutate(
+  repeats = repeats |> 
+    replace_na(1)) |> mutate(
+      frictionforce = repeats*value)
+
+manforcedata <- allfforcedata |> filter(!is.na(manuevre))
+
+
+manforcedata |> group_by(
+  manuevre, name, sector) |> 
+  count() |> filter(n != 1000)
+
+manforcedata |> group_by(
+  manuevre, name, sector) |> 
+  summarise(
+    minforce = frictionforce |> min(),
+    maxforce = frictionforce |> max(),
+    meanforce = frictionforce |> mean()
+  )
+
+p1manuevre <- manforcedata |> group_by(
+  manuevre, name, sector) |> 
+  summarise(
+    minforce = frictionforce |> min(),
+    maxforce = frictionforce |> max(),
+    meanforce = frictionforce |> mean()
+  ) |> group_by(name, manuevre) |> summarise(
+    minforce = minforce |> sum(),
+    maxforce = maxforce |> sum(),
+    meanforce = meanforce |> sum()
+  )
+png(filename = paste(getwd(),"/figures/fractionFrictionForceperManeuvre_min.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p1manuevre, aes(x=name, y = (minforce), fill = manuevre))+
+  geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+dev.off()
+
+png(filename = paste(getwd(),"/figures/fractionFrictionForceperManeuvre_mean.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p1manuevre, aes(x=name, y = (meanforce), fill = manuevre))+
+   geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+dev.off()
+
+png(filename = paste(getwd(),"/figures/fractionFrictionForceperManeuvre_max.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p1manuevre, aes(x=name, y = (maxforce), fill = manuevre))+
+   geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+dev.off()
+
+
+p2sector <- manforcedata |> group_by(
+  manuevre, name, sector) |> 
+  summarise(
+    minforce = frictionforce |> min(),
+    maxforce = frictionforce |> max(),
+    meanforce = frictionforce |> mean()
+  ) |> group_by(name, sector) |> summarise(
+    minforce = minforce |> sum(),
+    maxforce = maxforce |> sum(),
+    meanforce = meanforce |> sum()
+  )
+png(filename = paste(getwd(),"/figures/fractionFrictionForcepersector_min.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p2sector, aes(x=name, y = (minforce), fill = sector))+
+  geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+dev.off()
+
+png(filename = paste(getwd(),"/figures/fractionFrictionForcepersector_mean.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p2sector, aes(x=name, y = (meanforce), fill = sector))+
+   geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+dev.off()
+
+png(filename = paste(getwd(),"/figures/fractionFrictionForcepersector_max.png",sep=""),
+    width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
+    bg = "white")
+ggplot(p2sector, aes(x=name, y = (maxforce), fill = sector))+
+   geom_bar(position = "fill", stat = "identity")+
+  theme(text = element_text(size = 16),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+dev.off()
+
+```
