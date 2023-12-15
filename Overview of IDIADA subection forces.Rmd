@@ -97,15 +97,20 @@ rm(list = setdiff(ls(),c("all.forces", "all.multiplications")))
 
 Make data frame for figure based on calculation data all.forces above:
 ```{r}
-
+library(tidyverse)
+str(all.forces)
+#restructure data from nested lists to long data format
 long.data <- all.forces |> enframe() |> unnest_longer(value) |> unnest(cols = c(value))
-
+str(long.data)
+# same for the data on how many times the different sectors are present in each scenario
 long.mult <- all.multiplications |> enframe() |> unnest_longer(value) |> 
   unnest(cols = c(value)) |> rename(repeats = value,
                                     sector = value_id) 
-
+# Also extract the sector that each repeat is for by adding the sector variable:
 long.mult <- long.mult  |> mutate(sector = str_remove_all(sector, pattern = "_repeats"))
+str(long.mult)
 
+# Add variable sector and maneuvre* to long.data
 long.data <- long.data |> 
   mutate(
     sector = paste0("sector",substr(value_id,nchar(value_id)-1,nchar(value_id))),
@@ -115,14 +120,16 @@ long.data <- long.data |>
                          str_detect(value_id,"corner") ~ "cornering")
   )
 
-
+# join the friction force data per sector with the sector counts
 allfforcedata <- left_join(long.data,long.mult) |>   mutate(
   repeats = repeats |> 
     replace_na(1)) |> mutate(
       frictionforce = repeats*value)
 
+# remove the totals data which is not per manuevre
 manforcedata <- allfforcedata |> filter(!is.na(manuevre))
-
+totforcedata <- allfforcedata |> filter(is.na(manuevre))
+str(totforcedata)
 
 manforcedata |> group_by(
   manuevre, name, sector) |> 
@@ -136,6 +143,13 @@ manforcedata |> group_by(
     meanforce = frictionforce |> mean()
   )
 
+
+
+```
+
+Figures
+
+```{r}
 p1manuevre <- manforcedata |> group_by(
   manuevre, name, sector) |> 
   summarise(
@@ -147,6 +161,7 @@ p1manuevre <- manforcedata |> group_by(
     maxforce = maxforce |> sum(),
     meanforce = meanforce |> sum()
   )
+
 png(filename = paste(getwd(),"/figures/fractionFrictionForceperManeuvre_min.png",sep=""),
     width = 10*0.9, height = 5*0.9, units = "in", res = 300, #pointsize = 50,
     bg = "white")
