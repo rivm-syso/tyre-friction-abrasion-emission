@@ -15,15 +15,15 @@ frac_mass_rotate_parts_vehicle = runif(n=1000, 0.13,0.15)
 
 ## Input tyre performance data
 
-tyre_name ="Goodyear Efficient Grip SUV"
+tyre_name ="Linglong"
 # minimum roll coefficient (kg/t) according to EU label
-c_roll_tyre_min = 6.5
+c_roll_tyre_min = 7.8
 # maximum roll coefficient (kg/t) according to EU label
-c_roll_tyre_max = 9
+c_roll_tyre_max = 9.0
 # minimum grip index according to EU label
-grip_index_tyre_min = 1.5
+grip_index_tyre_min = 1.25
 # maximum grip index according to EU label
-grip_index_tyre_max = 1.55
+grip_index_tyre_max = 1.39
 # indicate track underground as "dry asphalt" or "wet asphalt"
 track_underground = "dry_asphalt"
 
@@ -34,7 +34,7 @@ grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
 mu_max_ref_tyre_wet = 0.85
 
 # Source tyre friction funtions
-source("tyre_wear_functions20230614.R")
+source("R/tyre_wear_functions20230614.R")
 
 ## Setup vehicle parameters for track friction simulations
 

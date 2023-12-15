@@ -34,7 +34,7 @@ grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
 mu_max_ref_tyre_wet = 0.85
 
 # Source tyre friction funtions
-source("tyre_wear_functions20230614.R")
+source("R/tyre_wear_functions20230614.R")
 
 ## Setup vehicle parameters for track friction simulations
 
@@ -300,7 +300,7 @@ IDIADA_total_friction_work_sector_8 = sector_8_repeats*(IDIADA_corner_lat_fricti
 
 #sector 9 drive away from parking
 
-sector_velocity_kmh = ((2*pi*11.7)/15)*3.6
+sector_velocity_kmh = 40
 sector_start_velocity_kmh = ((2*pi*11.7)/15)*3.6
 sector_end_velocity_kmh = 40
 sector_underground = "dry asphalt"

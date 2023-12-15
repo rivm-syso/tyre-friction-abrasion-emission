@@ -34,7 +34,7 @@ grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
 mu_max_ref_tyre_wet = 0.85
 
 # Source tyre friction funtions
-source("tyre_wear_functions20230614.R")
+source("R/tyre_wear_functions20230614.R")
 
 ## Setup vehicle parameters for track friction simulations
 
