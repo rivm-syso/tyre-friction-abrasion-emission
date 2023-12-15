@@ -300,7 +300,7 @@ IDIADA_total_friction_work_sector_8 = sector_8_repeats*(IDIADA_corner_lat_fricti
 
 #sector 9 drive away from parking
 
-sector_velocity_kmh = ((2*pi*11.7)/15)*3.6
+sector_velocity_kmh = 30
 sector_start_velocity_kmh = ((2*pi*11.7)/15)*3.6
 sector_end_velocity_kmh = 30
 sector_underground = "dry asphalt"

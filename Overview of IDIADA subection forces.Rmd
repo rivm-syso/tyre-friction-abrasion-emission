@@ -218,3 +218,29 @@ ggplot(p2sector, aes(x=name, y = (maxforce), fill = sector))+
 dev.off()
 
 ```
+
+
+Is ome of the data negative?
+
+```{r}
+
+
+manforcedata |> filter(
+  frictionforce < 0
+)
+
+p2sector <- manforcedata |> group_by(
+  manuevre, name, sector) |> 
+  summarise(
+    minforce = frictionforce |> min(),
+    maxforce = frictionforce |> max(),
+    meanforce = frictionforce |> mean()
+  ) |> group_by(name, sector) |> summarise(
+    minforce = minforce |> sum(),
+    maxforce = maxforce |> sum(),
+    meanforce = meanforce |> sum()
+  )
+
+
+```
+
