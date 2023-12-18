@@ -1,5 +1,5 @@
-#' Friction Force Functions
-#' 
+#### Friction Force Functions
+#' Friction force
 #' These functions are used to calculate the friction force. The functions include
 #' f_roll_force, f_drag_force, f_slope_force, f_brake_force, f_accel_force, f_c_decel_inert, 
 #' f_centripet_force and f_bank_force. 
@@ -115,7 +115,7 @@ f_downhill_resist_force <- function (c_roll, grav_constant, c_drag, rho_air, A_v
 
 # Additional brake force is needed in case the downhill slope force is greater than the resistant force
 
-f_downhill_brake_force (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
+f_downhill_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
 {-(pmin(0,
       f_downhill_slope_force(m_vehicle, grav_constant, alpha_slope)
       + f_downhill_resist_force(c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)))}
@@ -135,14 +135,22 @@ f_centripet_force <- function(m_vehicle , v_vehicle , r_corner) {m_vehicle*(v_ve
 
 f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle){grav_constant*sin(alpha_bank_slope)*m_vehicle}
 
-#### Distance functions ####
-#' Distance functions
+#'@section Normal load force in N:
+#'
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+
+f_normal_load_force <- function(alpha_slope,m_vehicle, grav_constant){cos(alpha_slope)*(m_vehicle*grav_constant)}
+
+
+#### Distance and time functions ####
+#' Time and distance functions
 #' 
-#' These functions are used to calculate the distances over which driving maneuvers 
-#' take place. The functions include f_accel_time, f_accel_distance, f_decel_time,
-#' f_decel_distance, f_longitude_friction_work, f_latitude_friction_work and
-#' f_corner_distance. 
+#' These functions are used to calculate the distances and times over which driving maneuvers 
+#' take place. The functions include f_accel_time, f_accel_distance, f_decel_time and 
+#' f_decel_distance and f_corner_distance. 
 #' 
+#' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
 #'@section Acceleration time in s: 
 #'
 #'@param v_start Velocity at the start of the maneuver (m/s)
@@ -152,15 +160,16 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle){grav_constan
 f_accel_time<-function(v_start,v_end,c_accel){-(v_start-v_end)/c_accel}
 
 #'@section Acceleration distance in m:
-#'
+#' The acceleration distance is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
 #'@param v_start Velocity at the start of the maneuver (m/s)
-#'@param Accel_time Acceleration time (s)
 #'@param c_accel Acceleration constant of the vehicle (m/s^2) 
 
-f_accel_distance <- function(v_start , Accel_time , c_accel ) {v_start*Accel_time+1/2*c_accel*Accel_time^2}
-
+f_accel_distance <- function(v_start , v_end , c_accel ) 
+{v_start*f_acceltime(v_start,v_end,c_accel)
+  +1/2*c_accel*f_accel_time(v_start,v_end,c_accel)^2}
 
 #'@section Deceleration time in s:
+#'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and decelaration constant (m/s^2) of the maneuver
 #'
 #'@param v_start Velocity at the start of the maneuver (m/s)
 #'@param v_end Velocity at the end of the maneuver (m/s)
@@ -171,26 +180,11 @@ f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
 #'@section Deceleration distance in m:
 #'
 #'@param v_start Velocity at the start of the maneuver (m/s)
-#'@param Decel_time Deceleration time (s)
+#'#'@param v_end Velocity at the end of the maneuver (m/s)
 #'@param c_decel Deceleration constant of the vehicle (m/s^2)
 
-f_decel_distance <- function(v_start , Decel_time , c_decel ) {v_start*Decel_time+1/2*c_decel*Decel_time^2}
-
-#'@section Longitude friction work in N:
-#'
-#'@param long_force Longitudinal force (N)
-#'@param slip Difference between the actual vehicle velocity and radiant velocity of the wheels (m/s)
-#'@param distance Distance of maneuver (m)
-
-f_longitude_friction_work <- function(long_force , slip, distance){(long_force)*slip*distance}
-
-#'@section Latitude friction work in N:
-#'
-#'@param lat_force Latitudinal force (N) 
-#'@param slip Difference between the actual vehicle velocity and radiant velocity of the wheels (m/s)
-#'@param distance Distance of maneuver (m)
-
-f_latitude_friction_work <- function(lat_force, slip, distance){lat_force*slip*distance}
+f_decel_distance <- function(v_start, v_end, c_decel )
+  {v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
 #'
@@ -199,6 +193,7 @@ f_latitude_friction_work <- function(lat_force, slip, distance){lat_force*slip*d
 
 f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_corner*pi)}
 
+
 #### Slip Functions ####
 #' Slip Functions
 #' 
@@ -206,12 +201,6 @@ f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_cor
 #' f_mu_slip, f_mu_max, f_x_slip_long_force, f_slip_wheelspin, f_c_full_brake, 
 #' f_slip_brake, f_mu_lat_slip and f_slip_lateral. 
 #' 
-#'@section Normal load force in N:
-#'
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-
-f_normal_load_force <- function(m_vehicle, grav_constant){m_vehicle*grav_constant}
 
 #'@section Slip friction coefficient (unitless):
 #'
@@ -276,3 +265,20 @@ f_mu_lat_slip <- function(normal_load_force, long_force){normal_load_force/lat_f
 #'@param lat_force Lateral force (N)
 
 f_slip_lateral <- function (optimal_slip, x_slip_lat_force, lat_force){pmin(optimal_slip, x_slip_lat_force*lat_force)}
+
+
+#'@section Longitude friction work in N:
+#'
+#'@param long_force Longitudinal force (N)
+#'@param slip Difference between the actual vehicle velocity and radiant velocity of the wheels (m/s)
+#'@param distance Distance of maneuver (m)
+
+f_longitude_friction_work <- function(long_force , slip, distance){(long_force)*slip*distance}
+
+#'@section Latitude friction work in N:
+#'
+#'@param lat_force Latitudinal force (N) 
+#'@param slip Difference between the actual vehicle velocity and radiant velocity of the wheels (m/s)
+#'@param distance Distance of maneuver (m)
+
+f_latitude_friction_work <- function(lat_force, slip, distance){lat_force*slip*distance}
