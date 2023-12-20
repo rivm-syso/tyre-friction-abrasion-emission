@@ -353,16 +353,43 @@ f_mu_constant_speed_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag
 #'The friction coefficient during deceleration is calculated by dividing the longitudinal force (N) during deceleration
 #'by the normal load force (N)
 
-############# Hier was ik gebleven ##########
+f_mu_decel_slip <- function(m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
+{f_decel_resist_force(m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)*
+    1/(f_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
+
+#'@section Peak friction coefficient (unitless):
+#'The peak friction coefficient (mu_max_tyre) is considered to be a characteristic of the tyres. 
+#'On wet asphalt the peak friction coefficient(wet_mu_max_tyre) can be derived from the wet grip index number 
+#'and the peak friction coefficient at wet asphalt of a reference tyre (wet_mu_max_ref_tyre) which has a value of 0.85.
+
+f_wet_mu_max_tyre <-  function(grip_index_tyre, wet_mu_max_ref_tyre)
+  {(grip_index_tyre * wet_mu_max_ref_tyre) / 1.25} 
+
+# The peak friction coefficient between the tyre and the track is then estimated by 
+# multiplying the wet peak friction coefficient on asphalt with a correction factor
+
+f_mu_max_tyre_track <- function (grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track)
+{f_wet_mu_max_tyre(grip_index_tyre, wet_mu_max_ref_tyre) * x_correct_mu_max_track}
+
+# The linearity between longitudinal friction force and slip is estimated by dividing the optimal slip ratio of the track with the estimate peak friction coefficient
+
+f_x_linear_mu_vs_slip <- function (grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track, optimal_slip_track)
+{f_mu_max_tyre_track(grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track)*1/(optimal_slip_track)}
 
 
-#'@section Maximum friction coefficient (unitless):
+##### HIER WAS IK GEBLEVEN!! ####
+
+
 #'
 #'@param grip_index_tyre Tyre grip index (unitless)
 #'@param x_correct_road Correction factor for wet to dry or wet to wet conditions (unitless)
 #'@param mu_max_ref_tyre Peak friction coefficient of EU reference tyre on EU reference track (??)
 
 #f_mu_max <- function(grip_index_tyre, x_correct_road, mu_max_ref_tyre){(grip_index_tyre)/((1/mu_max_ref_tyre)*(125/100))*x_correct_road}
+
+
+
+
 
 #'@section Longitude slip force in N
 #'
