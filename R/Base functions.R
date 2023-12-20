@@ -1,3 +1,11 @@
+### List of parameters
+#'@param c_roll The roll coefficient of the tyre (kg/kg)
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+
+
+
+
 #### Friction Force Functions
 #' Friction force
 #' These functions are used to calculate the friction force. The functions include
@@ -6,10 +14,6 @@
 #'
 #'@section Roll resistance force in N:
 #'
-#'@param c_roll The roll coefficient of the tyre (kg/kg)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-
 f_roll_force <- function(c_roll, m_vehicle, grav_constant) {c_roll*m_vehicle*grav_constant}
 
 #'@section Drag resistance force in N:
@@ -30,26 +34,44 @@ f_drag_force <- function(c_drag, A_vehicle, rho_air, v_vehicle, v_wind) {pmax(0,
 
 f_slope_force <- function(m_vehicle, grav_constant, alpha_slope) {m_vehicle*grav_constant*sin(alpha_slope)}
 
-#'@section Brake force in N:
-#'
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_brake Braking constant of the vehicle (m/s^2)  
-
-f_brake_force <- function(m_vehicle, m_rotate, c_brake) {(m_vehicle+m_rotate)*c_brake}
-
 #'@section Inertia force upon acceleration in N: 
 #'
 #'@param m_vehicle Mass of the vehicle (kg)
 #'@param m_rotate Mass of the rotating parts (kg)
 #'@param c_accel Acceleration constant of the vehicle (m/s^2) 
 
-f_accel_force <- function(m_vehicle, m_rotate, c_accel) {(m_vehicle+m_rotate)*c_accel}
+f_accel_inert_force <- function(m_vehicle, m_rotate, c_accel) {(m_vehicle+m_rotate)*c_accel}
+
+#'@section Total longitudinal force during acceleration
+#'The total resistant forces during acceleration are the inertia force plus roll, drag and uphill slope force. 
+#'In case slope is negative, slope force becomes propulsive instead of resistive and is therefor limited to 0.
+#'
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param rho_air Density of air (kg/m^3)
+#'@param A_vehicle Frontal area of vehicle in (m^2)  
+#'@param v_wind Wind velocity (m/s) 
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
+#'@param v_start_accel Vehicle velocity at start of the deceleration event in m/s
+#'@param v_end_accel Vehicle velocity at end of the deceleration event in m/s
+#'@param m_rotate Mass of the rotating parts of the vehicle
+#'@param c_accel Acceleration constant of the maneuver
+
+f_accel_force <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)
+{f_roll_force(c_roll, m_vehicle, grav_constant) +
+    f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle=mean(v_start_accel, v_end_accel), v_wind) +
+    pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope)) +
+    f_accel_inert_force(m_vehicle, m_rotate, c_accel)}
 
 #'@section Inertia force upon deceleration
 #'
 #The total inertia forces acting on the vehicle the moment a deceleration maneuvers commences (the driver lays foot off gas)
 #is equal to the sum of all resistant forces on the vehicle at that moment which are roll force, drag force and uphill slope force. 
+#' In case of donwhill slope, the slope force is negative to the resistant force, 
+#' so that more brake force is needed to achieve the desired deceleration constant
 #'
 #'@param m_vehicle Mass of the vehicle (kg)
 #'@param m_rotate Mass of the rotating parts (kg)
@@ -61,12 +83,23 @@ f_accel_force <- function(m_vehicle, m_rotate, c_accel) {(m_vehicle+m_rotate)*c_
 #'@param v_wind Wind velocity (m/s) 
 #'@param alpha_slope Slope of the road in longitudinal direction (degrees)
 #'@param v_start_decel Vehicle velocity at start of the deceleration event in m/s
-#'@param v_end_decel Vehicel velocity at end of the deceleration event in m/s
+#'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
 
 f_decel_resist_force <- function (m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
 {f_roll_force(c_roll, m_vehicle, grav_constant)
     + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
-  + pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope))}
+  + f_slope_force(m_vehicle, grav_constant, alpha_slope)}
+
+
+#'@section Maximum brake force
+# Brake force acting on the vehicle when the maximum brake constant of the tyres is achieved
+#'
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)  
+
+f_max_brake_force <- function(m_vehicle, m_rotate, c_max_brake) {(m_vehicle+m_rotate)*c_max_brake}
+
 
 #'@section Brake force needed upon deceleration
 
@@ -79,7 +112,8 @@ f_decel_resist_force <- function (m_vehicle, m_rotate, c_roll, grav_constant, rh
 #'@param c_drag Drag coefficient of the vehicle (unitless)
 #'@param rho_air Density of air (kg/m^3)
 #'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_vehicle Velocity of driving maneuver (m/s)
+#'@param v_start_decel Velocity at the start of the decelaration maneuver (m/s)
+#'@param v_end_decel Velocity at the end of the deceleration maneuver (m/s)
 #'@param v_wind Wind velocity (m/s) 
 #'@param alpha_slope Slope of the road in longitudinal direction (degrees)
 
@@ -97,11 +131,12 @@ f_decel_brake_force <- function(c_decel, m_vehicle, m_rotate, c_roll, grav_const
 #'@param alpha_slope Slope of the road in longitudinal direction (degrees)
 
 f_downhill_slope_force <- function(m_vehicle, grav_constant, alpha_slope)
-  { pmin(0, m_vehicle * grav_constant * sin(alpha_slope))}
+  { pmax(0, m_vehicle * grav_constant * sin(alpha_slope))}
 
 # Then the resistant forces already slowing the vehicle down are simulated, which are roll resistant force and drag force
 
 #'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param m_vehicle Mass of the vehicle (kg)
 #'@param grav_constant Gravitational constant (m/s^2)
 #'@param c_drag Drag coefficient of the vehicle (unitless)
 #'@param rho_air Density of air (kg/m^3)
@@ -109,14 +144,23 @@ f_downhill_slope_force <- function(m_vehicle, grav_constant, alpha_slope)
 #'@param v_vehicle Velocity of driving maneuver (m/s)
 #'@param v_wind Wind velocity (m/s) 
 
-f_downhill_resist_force <- function (c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)
+f_downhill_resist_force <- function (c_roll, m_vehicle, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)
 {f_roll_force(c_roll, m_vehicle, grav_constant)
   + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
 
 # Additional brake force is needed in case the downhill slope force is greater than the resistant force
 
+#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param rho_air Density of air (kg/m^3)
+#'@param A_vehicle Frontal area of vehicle in (m^2)  
+#'@param v_vehicle Velocity of driving maneuver (m/s)
+#'@param v_wind Wind velocity (m/s) 
+
 f_downhill_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
-{-(pmin(0,
+{-(pmax(0,
       f_downhill_slope_force(m_vehicle, grav_constant, alpha_slope)
       + f_downhill_resist_force(c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)))}
 
@@ -139,6 +183,7 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle){grav_constan
 #'
 #'@param m_vehicle Mass of the vehicle (kg)
 #'@param grav_constant Gravitational constant (m/s^2)
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
 
 f_normal_load_force <- function(alpha_slope,m_vehicle, grav_constant){cos(alpha_slope)*(m_vehicle*grav_constant)}
 
@@ -201,20 +246,123 @@ f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_cor
 #' f_mu_slip, f_mu_max, f_x_slip_long_force, f_slip_wheelspin, f_c_full_brake, 
 #' f_slip_brake, f_mu_lat_slip and f_slip_lateral. 
 #' 
+### Slip caused by braking
+# There are three scenarios in which the brakes are used, which are:
+# i) the maximum brake test of the tyre, 
+# ii) brake to decelerate 
+# iii) brake to remain under speed limit at downhill slopes
 
-#'@section Slip friction coefficient (unitless):
+## The slip [unitless or (m/s)/(m/s)] caused by braking is calculated
+## by dividing the brake force needed to perform the maneuver with the maximum brake force the tyres can achieve
+
+#'@section Brake slip during deceleration maneuvers
+#' Brake slip during deceleration maneuvers is calculated by 
+#' #'dividing the brake force needed upon the deceleration maneuver with the maximum brake force the tyres can achieve
 #'
-#'@param normal_load_force Normal load force (N)
-#'@param long_force Longitudinal force (N)
+#'@param c_decel Deceleration constant of the performed maneuver
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param rho_air Density of air (kg/m^3)
+#'@param A_vehicle Frontal area of vehicle in (m^2)  
+#'@param v_start_decel Velocity at the start of the deceleration maneuver (m/s)
+#'@param v_end_decel Velocity at the end of the deceleration maneuver (m/s)
+#'@param v_wind Wind velocity (m/s) 
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
+#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)  
 
-f_mu_slip <- function(normal_load_force, long_force){normal_load_force/long_force}
+f_decel_brake_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
+{pmin(1, (f_decel_brake_force(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope) * 
+    1/(f_max_brake_force(m_vehicle, m_rotate, c_max_brake)))) }
+
+#'@section Brake slip during downhill constant speed driving
+#' Brake slip during downhill constant speed driving is calculated by dividing the needed brake force to remain under speed limit with 
+#' with the maximum brake force the tyres can achieve
+#' 
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param rho_air Density of air (kg/m^3)
+#'@param A_vehicle Frontal area of vehicle in (m^2)
+#'@param v_vehicle Vehicle velocity  
+#'@param v_start_decel Velocity at the start of the deceleration maneuver (m/s)
+#'@param v_end_decel Velocity at the end of the deceleration maneuver (m/s)
+#'@param v_wind Wind velocity (m/s) 
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
+#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)  
+#' 
+
+f_downhill_brake_slip <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, m_rotate, c_max_brake)
+{pmin(1,(f_downhill_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind) * 
+    1/ (f_max_brake_force(m_vehicle, m_rotate, c_max_brake))))}
+
+### Wheelspin slip
+
+#'Wheelspin slip [unitless or (m/s)/(m/s)] is caused by the difference in forward velocity between the vehicle and the wheels, 
+#'i.e. the wheels turn faster than the vehicle drives forward.
+#'The vehicle maneuvers are all assumed to be in the low slip regime.
+#'As such, wheelspin slip is estimated to be linear proportional to the friction coefficient. 
+#'The friction coefficient is estimated by dividing the normal load force (N) acting on the vehicle with the total longitudinal resistant forces (N).
+#'However this friction coefficient is limited to a maximum. 
+#'This peak friction coefficient is estimated from the wet tyre grip index and corrected for the track underground.
+#'The optimal slip ratio is reached in case the friction coefficient equals the maximum friction coefficient
+#'Optimal slip ratio is parameter that is given as a characteristic of the road surface
+#'  
+#'@section Friction coefficients per maneuver (unitless):
+#'Friction coefficients are calculated by dividing the longitudinal friction forces with the normal load force acting on the tyres
+#'The longitudinal friction forces differ for acceleration, constant speed and deceleration maneuvers, 
+#'so that the friction coefficients differ for these maneuver as well.
+#'The functions for the friction coefficients (mu) are therefore estimated separately for acceleration, deceleration and constant speed driving
+
+#'@'section Friction coefficient at acceleration
+#'
+#'The friction coefficient during acceleration is calculated by dividing the longitudinal force (N) during acceleration
+#'by the normal load force (N)
+#'
+#'@param m_vehicle Mass of the vehicle (kg)
+#'@param m_rotate Mass of the rotating parts (kg)
+#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param grav_constant Gravitational constant (m/s^2)
+#'@param c_drag Drag coefficient of the vehicle (unitless)
+#'@param rho_air Density of air (kg/m^3)
+#'@param A_vehicle Frontal area of vehicle in (m^2)  
+#'@param v_wind Wind velocity (m/s) 
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
+#'@param v_start_accel Vehicle velocity at start of the deceleration event in m/s
+#'@param v_end_accel Vehicle velocity at end of the deceleration event in m/s
+#'@param m_rotate Mass of the rotating parts of the vehicle
+#'@param c_accel Acceleration constant of the maneuver   
+
+f_accel_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start, v_end, v_wind, alpha_slope, m_rotate, c_accel)
+{f_accel_force(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start, v_end, v_wind, alpha_slope, m_rotate, c_accel)*
+    1/(f_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
+ 
+#'The friction coefficient during constant speed driving is calculated by dividing the longitudinal force (N) during constant speed driving
+#'by the normal load force (N)
+
+f_mu_constant_speed_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)
+{(f_roll_force(c_roll, m_vehicle, grav_constant)+
+    f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)+
+    pmax(0,f_slope_force(m_vehicle,grav_constant, alpha_slope)))*
+    1/(f_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
+
+#'The friction coefficient during deceleration is calculated by dividing the longitudinal force (N) during deceleration
+#'by the normal load force (N)
+
+############# Hier was ik gebleven ##########
+
 
 #'@section Maximum friction coefficient (unitless):
 #'
 #'@param grip_index_tyre Tyre grip index (unitless)
 #'@param x_correct_road Correction factor for wet to dry or wet to wet conditions (unitless)
 #'@param mu_max_ref_tyre Peak friction coefficient of EU reference tyre on EU reference track (??)
-f_mu_max <- function(grip_index_tyre, x_correct_road, mu_max_ref_tyre){(grip_index_tyre)/((1/mu_max_ref_tyre)*(125/100))*x_correct_road}
+
+#f_mu_max <- function(grip_index_tyre, x_correct_road, mu_max_ref_tyre){(grip_index_tyre)/((1/mu_max_ref_tyre)*(125/100))*x_correct_road}
 
 #'@section Longitude slip force in N
 #'
