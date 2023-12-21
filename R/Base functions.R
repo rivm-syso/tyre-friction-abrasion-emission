@@ -1,103 +1,38 @@
 ### List of parameters
 
-#'@param c_roll The roll coefficient of the tyre (kg/kg)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (km/m^3)
-#'@param v_vehicle Velocity of driving maneuver (m/s)
-#'@param v_wind Wind velocity (m/s)
+## Vehicle parameters
+
 #'@param A_vehicle Frontal area of vehicle in (m^2)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)' 
-#'@param m_vehicle Mass of the vehicle (kg)
+#'@param c_drag Aerodynamic drag coefficient of the vehicle (unitless)
 #'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_accel Acceleration constant of the vehicle (m/s^2) 
 #'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_wind Wind velocity (m/s) 
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param v_start_accel Vehicle velocity at start of the deceleration event in m/s
-#'@param v_end_accel Vehicle velocity at end of the deceleration event in m/s
-#'@param m_rotate Mass of the rotating parts of the vehicle
-#'@param c_accel Acceleration constant of the maneuver
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_wind Wind velocity (m/s) 
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param v_start_decel Vehicle velocity at start of the deceleration event in m/s
-#'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2) 
-#'@param c_decel Deceleration constant of the performed maneuver
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_start_decel Velocity at the start of the decelaration maneuver (m/s)
-#'@param v_end_decel Velocity at the end of the deceleration maneuver (m/s)
-#'@param v_wind Wind velocity (m/s) 
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_vehicle Velocity of driving maneuver (m/s)
-#'@param v_wind Wind velocity (m/s) 
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_vehicle Velocity of driving maneuver (m/s)
-#'@param v_wind Wind velocity (m/s)
-#'@param v_vehicle Velocity of the vehicle (m/s)
-#'@param r_corner Radius of the corner (m)
-#'@param grav_constant Gravitational constant (m/s^2) 
+
+## Tyre quality and design parameters
+#'@param c_roll The roll coefficient of the tyre (kg/kg)
+#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)
+
+## Road surface underground parameters
+
 #'@param apha_bank_slope Bank slope of the road in latitudinal direction (degrees)
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param c_decel Deceleration constant of the performed maneuver
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param m_rotate Mass of the rotating parts (kg)
-#'@param c_roll The roll resistance coefficient of the tyre (kg/kg)
+#'@param alpha_slope Slope of the road in longitudinal direction (degrees)' 
+#'@param r_corner Radius of the corner (m)
+
+## Landscape parameters
+#'@param rho_air Density of air (km/m^3)
+#'@param v_wind Wind velocity (m/s)
+
+## General physics parameters
 #'@param grav_constant Gravitational constant (m/s^2)
-#'@param c_drag Drag coefficient of the vehicle (unitless)
-#'@param rho_air Density of air (kg/m^3)
-#'@param A_vehicle Frontal area of vehicle in (m^2)  
-#'@param v_start_decel Velocity at the start of the deceleration maneuver (m/s)
-#'@param v_end_decel Velocity at the end of the deceleration maneuver (m/s)
-#'@param v_wind Wind velocity (m/s) 
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)  
-#'@param m_vehicle Mass of the vehicle (kg)
-#'@param grav_constant Gravitational constant (m/s^2)
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)
-#'@param v_start Velocity at the start of the maneuver (m/s)
-#'@param v_end Velocity at the end of the maneuver (m/s)
-#'@param c_accel Acceleration constant of the vehicle (m/s^2) 
-#'@param v_start Velocity at the start of the maneuver (m/s)
-#'@param c_accel Acceleration constant of the vehicle (m/s^2) 
+
+## Driving maneuver parameters
+
+#'@param c_accel Acceleration constant of an acceleration maneuver (m/s^2) 
+#'@param c_decel Deceleration constant of a deceleration maneuver (m/s^2)
+#'@param v_end_accel Vehicle velocity at end of the acceleration event in m/s
+#'@param v_start_accel Vehicle velocity at start of an acceleration maneuver in m/s
+#'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
+#'@param v_start_decel Vehicle velocity at start of a deceleration maneuver in m/s
+#'@param v_vehicle Velocity of driving maneuver (m/s)
 
 #### Friction Force Functions
 #' Friction force
