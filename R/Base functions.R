@@ -9,23 +9,27 @@
 
 ## Tyre quality and design parameters
 #'@param c_roll The roll coefficient of the tyre (kg/kg)
+#'@param grip_index_tyre Tyre grip index number from EU label
 #'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)
+#'@param wet_mu_max_ref_tyre The friction coefficient of an EU reference tyre on wet asphalt (0.85)
 
 ## Road surface underground parameters
 
 #'@param apha_bank_slope Bank slope of the road in latitudinal direction (degrees)
 #'@param alpha_slope Slope of the road in longitudinal direction (degrees)' 
+#'@param optimal_ratio_slip_track Optimal slip ratio of the track underground
 #'@param r_corner Radius of the corner (m)
-
+#'@param x_correct_mu_max_track A correction factor for the maximum friction coefficient across different undergrounds
+#'
 ## Landscape parameters
 #'@param rho_air Density of air (km/m^3)
 #'@param v_wind Wind velocity (m/s)
-
+#
 ## General physics parameters
 #'@param grav_constant Gravitational constant (m/s^2)
-
+#
 ## Driving maneuver parameters
-
+#
 #'@param c_accel Acceleration constant of an acceleration maneuver (m/s^2) 
 #'@param c_decel Deceleration constant of a deceleration maneuver (m/s^2)
 #'@param v_end_accel Vehicle velocity at end of the acceleration event in m/s
@@ -33,7 +37,10 @@
 #'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
 #'@param v_start_decel Vehicle velocity at start of a deceleration maneuver in m/s
 #'@param v_vehicle Velocity of driving maneuver (m/s)
-
+#
+## Parameters for calibration (now set as 7 according to literature)
+#'@param x_linear_lat_vs_long_slip A factor to translate increase of slip by lateral mu vs increase of slip by longitidunal mu 
+#
 #### Friction Force Functions
 #' Friction force
 #' These functions are used to calculate the friction force. The functions include
@@ -70,7 +77,7 @@ f_accel_force <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, 
 #'
 #The total inertia forces acting on the vehicle the moment a deceleration maneuvers commences (the driver lays foot off gas)
 #is equal to the sum of all resistant forces on the vehicle at that moment which are roll force, drag force and uphill slope force. 
-#' In case of donwhill slope, the slope force is negative to the resistant force, 
+#' In case of downhill slope, the slope force is negative to the resistant force, 
 #' so that more brake force is needed to achieve the desired deceleration constant
 
 f_decel_resist_force <- function (m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
