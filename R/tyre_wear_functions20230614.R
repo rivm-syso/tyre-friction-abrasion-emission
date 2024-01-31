@@ -1115,8 +1115,8 @@ f_corner_lat_force <-
            grav_constant,
            sector_alpha_bank_slope)
   {
-    f_corner_centripet_force(m_vehicle , sector_velocity_kmh, sector_corner_radius) +
-      f_corner_bank_force(grav_constant, sector_alpha_bank_slope, m_vehicle)
+    ((f_corner_centripet_force(m_vehicle , sector_velocity_kmh, sector_corner_radius) -
+      f_corner_bank_force(grav_constant, sector_alpha_bank_slope, m_vehicle))^2)^0.5
   }
 
 f_x_slip_lat_force <-
