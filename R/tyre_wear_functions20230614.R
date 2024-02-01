@@ -159,7 +159,7 @@ f_accel_roll_force <- # This function is exaclty the same and repeated for acc, 
   }
 f_accel_uphill_slope_force <-
   function(m_vehicle, grav_constant, alpha_slope) {
-    pmax(0, m_vehicle * grav_constant * sin(alpha_slope))
+    pmax(0, m_vehicle * grav_constant * sin(alpha_slope)*pi/180)
   }
 f_accel_inert_force <-
   function(m_vehicle, m_rotate, c_accel) {
@@ -359,7 +359,7 @@ f_decel_roll_force <-
   }
 f_decel_uphill_slope_force <-
   function(m_vehicle, grav_constant, alpha_slope) {
-    pmax(0, m_vehicle * grav_constant * sin(alpha_slope))
+    pmax(0, m_vehicle * grav_constant * sin(alpha_slope)*pi/180)
   }
 f_decel_resist_force <-
   function (c_drag,
@@ -409,7 +409,7 @@ f_c_decel_resist <-
 
 f_downhill_slope_force <-
   function (m_vehicle, grav_constant, alpha_slope) {
-    pmin(0, m_vehicle * grav_constant * sin(alpha_slope))
+    pmin(0, m_vehicle * grav_constant * sin(alpha_slope)*pi/180)
   }
 f_c_accel_downhill_slope_force <-
   function(m_vehicle,
@@ -1106,7 +1106,7 @@ f_corner_bank_force <-
   function(grav_constant,
            sector_alpha_bank_slope,
            m_vehicle) {
-    grav_constant * sin(sector_alpha_bank_slope) * m_vehicle
+    grav_constant * sin(sector_alpha_bank_slope)*pi/180 * m_vehicle
   }
 f_corner_lat_force <-
   function(m_vehicle ,
