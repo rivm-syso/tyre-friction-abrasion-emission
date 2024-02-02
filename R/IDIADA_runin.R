@@ -15,15 +15,15 @@ frac_mass_rotate_parts_vehicle = runif(n=1000, 0.13,0.15)
 
 ## Input tyre performance data
 
-tyre_name ="Linglong"
+tyre_name ="Michelin"
 # minimum roll coefficient (kg/t) according to EU label
-c_roll_tyre_min = 7.8
+c_roll_tyre_min = 9.1
 # maximum roll coefficient (kg/t) according to EU label
-c_roll_tyre_max = 9.0
+c_roll_tyre_max = 10.5
 # minimum grip index according to EU label
-grip_index_tyre_min = 1.25
+grip_index_tyre_min = 1.55
 # maximum grip index according to EU label
-grip_index_tyre_max = 1.39
+grip_index_tyre_max = 1.56
 # indicate track underground as "dry asphalt" or "wet asphalt"
 track_underground = "dry_asphalt"
 
@@ -116,6 +116,7 @@ sector_underground = "dry asphalt"
 
 ## Sector 2 corner sector simulations
 IDIADA_corner_distance_sector_2 = f_corner_distance(sector_corner_radius,sector_corner_angle)
+IDIADA_corner_lat_force_sector_2 = f_corner_lat_force(m_vehicle, sector_velocity_kmh, sector_corner_radius, grav_constant, sector_alpha_bank_slope)
 IDIADA_corner_lat_slip_sector_2 = f_corner_lat_slip(m_vehicle , sector_velocity_kmh, sector_corner_radius,grav_constant, sector_alpha_bank_slope, grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
 IDIADA_corner_lat_friction_work_sector_2 = f_corner_lat_friction_work(sector_corner_radius,sector_corner_angle, m_vehicle , sector_velocity_kmh, grav_constant, sector_alpha_bank_slope, grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
 
@@ -142,7 +143,18 @@ maneuver_simulation_data <- data.frame (maneuver = c (1:8),
                                         "max. long. force" = c (max(IDIADA_accel_long_force_sector_1), max(IDIADA_const_speed_long_force_sector_1), max (IDIADA_decel_long_force_sector_1), max(IDIADA_corner_long_force_sector_2), max(IDIADA_accel_long_force_sector_1), max(IDIADA_const_speed_long_force_sector_1), max (IDIADA_decel_long_force_sector_1), max(IDIADA_corner_long_force_sector_2)),
                                         "min. long. slip" = c (min(IDIADA_accel_slip_sector_1), min(IDIADA_const_speed_slip_sector_1), min (IDIADA_decel_slip_sector_1), min(IDIADA_const_speed_slip_sector_2), min(IDIADA_accel_slip_sector_1), min(IDIADA_const_speed_slip_sector_1), min (IDIADA_decel_slip_sector_1), min(IDIADA_const_speed_slip_sector_2)),
                                         "median. long. slip" = c (median(IDIADA_accel_slip_sector_1), median(IDIADA_const_speed_slip_sector_1), median (IDIADA_decel_slip_sector_1), median(IDIADA_const_speed_slip_sector_2), median(IDIADA_accel_slip_sector_1), median(IDIADA_const_speed_slip_sector_1), median(IDIADA_decel_slip_sector_1), median(IDIADA_const_speed_slip_sector_2)),
-                                        "max. long. slip" = c (max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2), max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2)))
+                                        "max. long. slip" = c (max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2), max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2)),
+                                        "min. long. friction" = c (min(IDIADA_accel_friction_work_sector_1), min(IDIADA_const_speed_friction_work_sector_1), min (IDIADA_decel_friction_work_sector_1), min(IDIADA_const_speed_friction_work_sector_2), min(IDIADA_accel_friction_work_sector_1), min(IDIADA_const_speed_friction_work_sector_1), min (IDIADA_decel_friction_work_sector_1), min(IDIADA_const_speed_friction_work_sector_2)),
+                                        "median long. friction" = c (median(IDIADA_accel_friction_work_sector_1), median(IDIADA_const_speed_friction_work_sector_1), median (IDIADA_decel_friction_work_sector_1), median(IDIADA_const_speed_friction_work_sector_2), median(IDIADA_accel_friction_work_sector_1), median(IDIADA_const_speed_friction_work_sector_1), median (IDIADA_decel_friction_work_sector_1), median(IDIADA_const_speed_friction_work_sector_2)),
+                                        "max. long. friction" = c (max(IDIADA_accel_friction_work_sector_1), max(IDIADA_const_speed_friction_work_sector_1), max (IDIADA_decel_friction_work_sector_1), max(IDIADA_const_speed_friction_work_sector_2), max(IDIADA_accel_friction_work_sector_1), max(IDIADA_const_speed_friction_work_sector_1), max (IDIADA_decel_friction_work_sector_1), max(IDIADA_const_speed_friction_work_sector_2)),
+                                        "lat. force" = c(0,0,0, IDIADA_corner_lat_force_sector_2,0,0,0,IDIADA_corner_lat_force_sector_2),
+                                        "min. lat. slip" = c(0,0,0, min(IDIADA_corner_lat_slip_sector_2),0,0,0,min(IDIADA_corner_lat_slip_sector_2)),
+                                        "median lat. slip" = c(0,0,0, median(IDIADA_corner_lat_slip_sector_2),0,0,0,median(IDIADA_corner_lat_slip_sector_2)),
+                                        "max. lat. slip" = c(0,0,0, max(IDIADA_corner_lat_slip_sector_2),0,0,0,max(IDIADA_corner_lat_slip_sector_2)),
+                                        "min. lat. friction" = c(0,0,0, min(IDIADA_corner_lat_friction_work_sector_2),0,0,0,min(IDIADA_corner_lat_friction_work_sector_2)),
+                                        "median lat. friction" = c(0,0,0, median(IDIADA_corner_lat_friction_work_sector_2),0,0,0,median(IDIADA_corner_lat_friction_work_sector_2)),
+                                        "max. lat. friction" = c(0,0,0, max(IDIADA_corner_lat_friction_work_sector_2),0,0,0,max(IDIADA_corner_lat_friction_work_sector_2)))
+
 
 
 
