@@ -1,4 +1,6 @@
-### List of parameters
+#### Base Functions as needed for calculating the average friction force on all tyres of a vehicle
+
+# to learn about these roxygen tags see: https://roxygen2.r-lib.org/articles/rd.html
 
 ## Vehicle parameters
 
@@ -41,6 +43,20 @@
 ## Parameters for calibration (now set as 7 according to literature)
 #'@param x_linear_lat_vs_long_slip A factor to translate increase of slip by lateral mu vs increase of slip by longitidunal mu 
 #
+
+
+#' Mass of rotating vehicle parts
+#' 
+#' f_m_rotate returns total mass of rotating vehicle parts in kg
+#'@param frac_mass_rotate_parts_vehicle 
+#'@param m_vehicle
+f_m_rotate <-
+  function(frac_mass_rotate_parts_vehicle,
+           m_vehicle) {
+    frac_mass_rotate_parts_vehicle * m_vehicle
+  }
+
+
 #### Friction Force Functions
 #' Friction force
 #' These functions are used to calculate the friction force. The functions include
