@@ -1119,16 +1119,9 @@ f_corner_lat_force <-
       f_corner_bank_force(grav_constant, sector_alpha_bank_slope, m_vehicle))^2)^0.5
   }
 
-f_x_slip_lat_force <-
-  function(grip_index_tyre,
-           x_correct_road,
-           mu_max_ref_tyre_wet,
-           optimal_slip) {
-    1 / 7 * f_x_slip_long_force(grip_index_tyre,
-                                x_correct_road,
-                                mu_max_ref_tyre_wet,
-                                optimal_slip)
-  }
+f_mu_lateral <-  function(m_vehicle, sector_velocity_kmh, sector_corner_radius, grav_constant, sector_alpha_bank_slope)
+{f_corner_lat_force(m_vehicle, sector_velocity_kmh, sector_corner_radius, grav_constant, sector_alpha_bank_slope)/
+    f_normal_load_force(m_vehicle, grav_constant)}
 
 f_corner_lat_slip <-
   function(m_vehicle ,
@@ -1140,18 +1133,12 @@ f_corner_lat_slip <-
            x_correct_road,
            mu_max_ref_tyre_wet,
            optimal_slip)
-  {
-    f_corner_lat_force(
-      m_vehicle ,
-      sector_velocity_kmh,
-      sector_corner_radius,
-      grav_constant,
-      sector_alpha_bank_slope
-    ) / f_normal_load_force(m_vehicle, grav_constant) / f_x_slip_lat_force(grip_index_tyre,
-                                                                           x_correct_road,
-                                                                           mu_max_ref_tyre_wet,
-                                                                           optimal_slip)
-  }
+  {f_mu_lateral(m_vehicle, sector_velocity_kmh, sector_corner_radius, grav_constant, sector_alpha_bank_slope)/
+      f_mu_max(grip_index_tyre,
+               x_correct_road,
+               mu_max_ref_tyre_wet)*optimal_slip}
+  
+  
 
 
 f_corner_lat_friction_work <-
