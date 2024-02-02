@@ -80,14 +80,26 @@ c_accel= sector_accel_g*grav_constant
 
 ## Sector 1 straight sector simulations
 IDIADA_accel_distance_sector_1 = f_accel_distance(sector_start_velocity_kmh, sector_velocity_kmh , c_accel)
+IDIADA_accel_long_force_sector_1 = f_accel_long_force(c_drag, A_vehicle, rho_air, sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle,
+  grav_constant, alpha_slope, m_rotate, c_accel)
 IDIADA_accel_slip_sector_1 = f_accel_slip(c_drag, A_vehicle, rho_air,sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope, m_rotate, c_accel, grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
 IDIADA_accel_friction_work_sector_1 = f_accel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air,sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope, m_rotate, c_accel)
 
 IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
+IDIADA_decel_long_force_sector_1 = f_decel_long_force(c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope)
 IDIADA_decel_slip_sector_1 = f_decel_brake_slip(c_decel, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant ,alpha_slope, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 IDIADA_decel_friction_work_sector_1 = f_decel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope, c_decel, m_rotate, grip_index_tyre, x_correct_road,c_full_brake_ref_tyre_wet)
 
 IDIADA_const_speed_distance_sector_1 = f_const_speed_distance(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel)
+IDIADA_const_speed_long_force_sector_1 = f_const_speed_long_force(c_drag,
+                                                                  A_vehicle,
+                                                                  rho_air,
+                                                                  sector_velocity_kmh,
+                                                                  v_wind ,
+                                                                  c_roll,
+                                                                  m_vehicle,
+                                                                  grav_constant ,
+                                                                  alpha_slope)
 IDIADA_const_speed_slip_sector_1 = f_const_speed_slip(m_vehicle, grav_constant, alpha_slope, c_drag, A_vehicle, rho_air, sector_velocity_kmh, v_wind,c_roll, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 IDIADA_const_speed_friction_work_sector_1 = f_const_speed_friction_work(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel, c_drag, A_vehicle, rho_air, v_wind , c_roll, m_vehicle, grav_constant , alpha_slope, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 
@@ -108,10 +120,31 @@ IDIADA_corner_lat_slip_sector_2 = f_corner_lat_slip(m_vehicle , sector_velocity_
 IDIADA_corner_lat_friction_work_sector_2 = f_corner_lat_friction_work(sector_corner_radius,sector_corner_angle, m_vehicle , sector_velocity_kmh, grav_constant, sector_alpha_bank_slope, grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
 
 IDIADA_const_speed_distance_sector_2 = f_const_speed_distance(sector_distance = IDIADA_corner_distance_sector_2,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel)
+IDIADA_corner_long_force_sector_2 = f_const_speed_long_force(c_drag,
+                                                                  A_vehicle,
+                                                                  rho_air,
+                                                                  sector_velocity_kmh,
+                                                                  v_wind ,
+                                                                  c_roll,
+                                                                  m_vehicle,
+                                                                  grav_constant ,
+                                                                  alpha_slope)
 IDIADA_const_speed_slip_sector_2 = f_const_speed_slip(m_vehicle, grav_constant, alpha_slope, c_drag, A_vehicle, rho_air, sector_velocity_kmh, v_wind,c_roll, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 IDIADA_const_speed_friction_work_sector_2 = f_const_speed_friction_work(sector_distance = IDIADA_corner_distance_sector_2,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel, c_drag, A_vehicle, rho_air, v_wind , c_roll, m_vehicle, grav_constant , alpha_slope, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 
 IDIADA_total_friction_work = IDIADA_accel_friction_work_sector_1 + IDIADA_decel_friction_work_sector_1+IDIADA_const_speed_friction_work_sector_1+IDIADA_corner_lat_friction_work_sector_2+IDIADA_const_speed_friction_work_sector_2
+
+
+maneuver_simulation_data <- data.frame (maneuver = c (1:8), 
+                                        distance = c(IDIADA_accel_distance_sector_1, IDIADA_const_speed_distance_sector_1, IDIADA_decel_distance_sector_1, IDIADA_corner_distance_sector_2, IDIADA_accel_distance_sector_1, IDIADA_const_speed_distance_sector_1, IDIADA_decel_distance_sector_1, IDIADA_corner_distance_sector_2),
+                                        "min. long. force" = c (min(IDIADA_accel_long_force_sector_1), min(IDIADA_const_speed_long_force_sector_1), min (IDIADA_decel_long_force_sector_1), min(IDIADA_corner_long_force_sector_2), min(IDIADA_accel_long_force_sector_1), min(IDIADA_const_speed_long_force_sector_1), min (IDIADA_decel_long_force_sector_1), min(IDIADA_corner_long_force_sector_2)),
+                                        "median long. force" = c (median(IDIADA_accel_long_force_sector_1), median(IDIADA_const_speed_long_force_sector_1), median (IDIADA_decel_long_force_sector_1), median(IDIADA_corner_long_force_sector_2), median(IDIADA_accel_long_force_sector_1), median(IDIADA_const_speed_long_force_sector_1), median (IDIADA_decel_long_force_sector_1), median(IDIADA_corner_long_force_sector_2)),
+                                        "max. long. force" = c (max(IDIADA_accel_long_force_sector_1), max(IDIADA_const_speed_long_force_sector_1), max (IDIADA_decel_long_force_sector_1), max(IDIADA_corner_long_force_sector_2), max(IDIADA_accel_long_force_sector_1), max(IDIADA_const_speed_long_force_sector_1), max (IDIADA_decel_long_force_sector_1), max(IDIADA_corner_long_force_sector_2)),
+                                        "min. long. slip" = c (min(IDIADA_accel_slip_sector_1), min(IDIADA_const_speed_slip_sector_1), min (IDIADA_decel_slip_sector_1), min(IDIADA_const_speed_slip_sector_2), min(IDIADA_accel_slip_sector_1), min(IDIADA_const_speed_slip_sector_1), min (IDIADA_decel_slip_sector_1), min(IDIADA_const_speed_slip_sector_2)),
+                                        "median. long. slip" = c (median(IDIADA_accel_slip_sector_1), median(IDIADA_const_speed_slip_sector_1), median (IDIADA_decel_slip_sector_1), median(IDIADA_const_speed_slip_sector_2), median(IDIADA_accel_slip_sector_1), median(IDIADA_const_speed_slip_sector_1), median(IDIADA_decel_slip_sector_1), median(IDIADA_const_speed_slip_sector_2)),
+                                        "max long. slip" = c (max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2), max(IDIADA_accel_slip_sector_1), max(IDIADA_const_speed_slip_sector_1), max(IDIADA_decel_slip_sector_1), max(IDIADA_const_speed_slip_sector_2)))
+
+
 
 IDIADA_perc_accel_friction_work =  IDIADA_accel_friction_work_sector_1 / (IDIADA_total_friction_work)
 IDIADA_perc_decel_friction_work =  IDIADA_decel_friction_work_sector_1 / (IDIADA_total_friction_work)
