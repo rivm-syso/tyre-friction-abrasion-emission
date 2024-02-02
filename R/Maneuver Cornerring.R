@@ -74,7 +74,7 @@ f_corn_dry <- function(sector_velocity_ms,
   
   list(maneuver=maneuver_4,
        distance=distance_maneuver_4,
-       friction_work_longitude=longitude_friction_work_maneuver_4,
+       friction_work_longitude = longitude_friction_work_maneuver_4,
        friction_work_latitude = latitude_friction_work_maneuver_4) 
   
 }

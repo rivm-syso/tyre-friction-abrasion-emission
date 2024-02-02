@@ -1,6 +1,8 @@
 ---
 title: "Testing book code optimasation"
 output: md_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.
@@ -53,7 +55,15 @@ grav_constant = 9.81
 # Source tyre friction funtions
 source("R/Base functions.R")
 
+### linearity slip and friction correction at wet and dry asphalt
+if (track_underground == "wet_asphalt") {
+  x_correct_road = 1
+}
 
+
+if (track_underground == "dry_asphalt") {
+  x_correct_road = runif(n = 1000, 1.07, 1.47)
+}
 
 
 ```
@@ -82,20 +92,39 @@ c_accel_max <-f_c_accel_max(t_0_100kmh_vehicle)
 
 ```{r m_rotate}
 ### mass (kg) of rotating parts
-m_rotate = f_m_rotate(frac_mass_rotate_parts_vehicle, m_vehicle)
+m_rotate = f_m_rotate(frac_mass_rotate_parts_vehicle=frac_mass_rotate_parts_vehicle, 
+                      m_vehicle=m_vehicle)
 ```
 
 m_rotate is uncertain and is typically between 13 and 15 percent of the vehicle weight (REF needed).
 
-```{r m_rotate}
-
-
-
-
+```{r f_mu_max}
 #### calculate peak friction coefficient between tyre and track
-mu_max_tyre_track = f_mu_max(grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet)
+mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre=grip_index_tyre, 
+                                        x_correct_mu_max_track=x_correct_road, 
+                                        wet_mu_max_ref_tyre=mu_max_ref_tyre_wet)
+```
+
+The peak friction coefficient is calculated using an uncertain conversion of tyre label to grip index and wet grip index to dry grip index to calculate the peak friction coefficient between the tyre and the track.
+
+```{r}
 #### calculate linear increase constant 'x' for track
-x_slip_long_force_tyre_track <- f_x_slip_long_force(grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
+x_slip_long_force_tyre_track <- f_x_slip_long_force(grip_index_tyre, 
+                                                    x_correct_road, 
+                                                    mu_max_ref_tyre_wet, 
+                                                    optimal_slip)
+
+
+```
+
+The is quite a departure here in Base function in how slip linearity here is used. There are now seperate functions per maneuvre.
+
+1.  How is with deceleration accounted for when it is just wheel slip and when breaking slip?
+
+```{r rest}
+
+
+
 #### brake deceleration constant of reference tyre under reference conditions in EU wet grip tests
 c_full_brake_ref_tyre_wet = 0.68*grav_constant
 ### calculate track-tyre deceleration constant (m.s^-2) at full wheel lock braking
