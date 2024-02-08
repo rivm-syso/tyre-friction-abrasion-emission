@@ -9,7 +9,7 @@ Goal is to replicate the scripting and use maneuvre functions and data instead. 
 
 The script is taken from IDIADA_motorway_viii.R.
 
-```{r}
+```{r data}
 
 
 # Leon Tyre Test Track Simulations Rural v
@@ -72,7 +72,7 @@ if (track_underground == "dry_asphalt") {
 ## Setup vehicle parameters for track friction simulations
 
 ### Normal load force of vehicle (N) performed in downwards direction
-normal_load_force <- f_normal_load_force(m_vehicle, grav_constant)
+normal_load_force <- f_normal_load_force(m_vehicle=m_vehicle, grav_constant)
 ```
 
 The new base functions now include slope in calculation of `normal_load_force`.
@@ -83,12 +83,11 @@ The new base functions now include slope in calculation of `normal_load_force`.
 
 ```{r c_accel_max}
 ### Vehicle maximum acceleration constant (m.s^-2)
+# helper function, only relevant wehen c_accel is missing.
 c_accel_max <-f_c_accel_max(t_0_100kmh_vehicle)
 ```
 
-1.  Where is `c_accel_max` used?
-
-2.  Function `f_c_accel_max` also not available in Base functions.
+1.  Where is `c_accel_max` used? It is used when the acceleration rate is not known and needs to be estimated based on vehicle specifications, such as time to 100 kph.
 
 ```{r m_rotate}
 ### mass (kg) of rotating parts
