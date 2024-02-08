@@ -1,4 +1,6 @@
-### List of parameters
+#### Base Functions as needed for calculating the average friction force on all tyres of a vehicle
+
+# to learn about these roxygen tags see: https://roxygen2.r-lib.org/articles/rd.html
 
 ## Vehicle parameters
 
@@ -41,6 +43,20 @@
 ## Parameters for calibration (now set as 7 according to literature)
 #'@param x_linear_lat_vs_long_slip A factor to translate increase of slip by lateral mu vs increase of slip by longitidunal mu 
 #
+
+
+#' Mass of rotating vehicle parts
+#' 
+#' f_m_rotate returns total mass of rotating vehicle parts in kg
+#'@param frac_mass_rotate_parts_vehicle 
+#'@param m_vehicle
+f_m_rotate <-
+  function(frac_mass_rotate_parts_vehicle,
+           m_vehicle) {
+    frac_mass_rotate_parts_vehicle * m_vehicle
+  }
+
+
 #### Friction Force Functions
 #' Friction force
 #' These functions are used to calculate the friction force. The functions include
@@ -82,7 +98,7 @@ f_accel_force <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, 
 
 f_decel_resist_force <- function (m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
 {f_roll_force(c_roll, m_vehicle, grav_constant)
-    + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
+  + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
   + f_slope_force(m_vehicle, grav_constant, alpha_slope)}
 
 #'@section Maximum brake force
@@ -104,7 +120,7 @@ f_decel_brake_force <- function(c_decel, m_vehicle, m_rotate, c_roll, grav_const
 # First the propulsive force in N caused by the downhill slope  of the road is simulated as a force negative to the resistant forces
 
 f_downhill_slope_force <- function(m_vehicle, grav_constant, alpha_slope)
-  { pmax(0, m_vehicle * grav_constant * sin(alpha_slope))}
+{ pmax(0, m_vehicle * grav_constant * sin(alpha_slope))}
 
 # Then the resistant forces already slowing the vehicle down are simulated, which are roll resistant force and drag force
 
@@ -116,8 +132,8 @@ f_downhill_resist_force <- function (c_roll, m_vehicle, grav_constant, c_drag, r
 
 f_downhill_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
 {-(pmax(0,
-      f_downhill_slope_force(m_vehicle, grav_constant, alpha_slope)
-      + f_downhill_resist_force(c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)))}
+        f_downhill_slope_force(m_vehicle, grav_constant, alpha_slope)
+        + f_downhill_resist_force(c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)))}
 
 #'@section Centripetal force in cornering in N:
 
@@ -139,7 +155,7 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle){grav_constan
 #'Therefore, the rules above are included in the routine as ((centripet_force - bank_force)^2)^0.5
 
 f_latitude_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-  {((f_centripet_force(m_vehicle , v_vehicle , r_corner) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
+{((f_centripet_force(m_vehicle , v_vehicle , r_corner) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
 
 #'@section Normal load force in N:
 #' Normal load force perpendicular to longitudinal directon
@@ -187,7 +203,7 @@ f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
 #'@param c_decel Deceleration constant of the vehicle (m/s^2)
 
 f_decel_distance <- function(v_start, v_end, c_decel )
-  {v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
+{v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
 #'
@@ -220,7 +236,7 @@ f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_cor
 
 f_decel_brake_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
 {pmin(1, (f_decel_brake_force(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope) * 
-    1/(f_max_brake_force(m_vehicle, m_rotate, c_max_brake)))) }
+            1/(f_max_brake_force(m_vehicle, m_rotate, c_max_brake)))) }
 
 #'@section Brake slip during downhill constant speed driving
 #' Brake slip during downhill constant speed driving is calculated by dividing the needed brake force to remain under speed limit with 
@@ -228,7 +244,7 @@ f_decel_brake_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_const
 
 f_downhill_brake_slip <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, m_rotate, c_max_brake)
 {pmin(1,(f_downhill_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind) * 
-    1/ (f_max_brake_force(m_vehicle, m_rotate, c_max_brake))))}
+           1/ (f_max_brake_force(m_vehicle, m_rotate, c_max_brake))))}
 
 ### Wheelspin slip
 
@@ -255,7 +271,7 @@ f_downhill_brake_slip <- function (m_vehicle, grav_constant, alpha_slope, c_roll
 f_accel_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)
 {f_accel_force(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*
     1/(f_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
- 
+
 #'The friction coefficient during constant speed driving is calculated by dividing the longitudinal force (N) during constant speed driving
 #'by the normal load force (N)
 
@@ -278,16 +294,20 @@ f_mu_decel_slip <- function(m_vehicle, c_roll, grav_constant, rho_air, v_start_d
 #'and the peak friction coefficient at wet asphalt of a reference tyre (wet_mu_max_ref_tyre) which has a value of 0.85.
 
 f_wet_mu_max_tyre <-  function(grip_index_tyre, wet_mu_max_ref_tyre)
-  {(grip_index_tyre * wet_mu_max_ref_tyre) / 1.25} 
+{(grip_index_tyre * wet_mu_max_ref_tyre) / 1.25} 
+
 
 # The peak friction coefficient between the tyre and the track is then estimated by 
 # multiplying the wet peak friction coefficient on asphalt with a correction factor
 
+#'@param x_correct_mu_max_track A correction factor for the maximum friction coefficient across different undergrounds
 f_mu_max_tyre_track <- function (grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track)
 {f_wet_mu_max_tyre(grip_index_tyre, wet_mu_max_ref_tyre) * x_correct_mu_max_track}
 
 # The wheelspin slip is then estimated per maneuver as (mu_maneuver/mu_max)*optimal_slip 
 
+#'@param optimal_slip_ratio_track ... #JM needs to define
+#'
 f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
                                     v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, 
                                     grip_index_tyre, wet_mu_max_ref_tyre, 
@@ -319,23 +339,28 @@ f_constant_speed_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c
 f_accel_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
                           v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, 
                           grip_index_tyre, wet_mu_max_ref_tyre, 
-                          x_correct_mu_max_track, optimal_slip_ratio_track)
-{f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, 
-                          v_wind, alpha_slope, m_rotate, c_accel, 
-                        grip_index_tyre, wet_mu_max_ref_tyre, 
-                        x_correct_mu_max_track, optimal_slip_ratio_track)+0}
+                          x_correct_mu_max_track, optimal_slip_ratio_track){
+  f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, 
+                         A_vehicle, rho_air, v_start_accel, v_end_accel, 
+                         v_wind, alpha_slope, m_rotate, c_accel, 
+                         grip_index_tyre, wet_mu_max_ref_tyre, 
+                         x_correct_mu_max_track, 
+                         optimal_slip_ratio_track) + 
+    0 # no braking
+}
 
 # Total slip during deceleration
 
 
 f_decel_slip <- function (m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track, optimal_slip_ratio_track, 
-                          c_decel, c_max_brake)
-{f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, 
-                        v_start_decel, v_end_decel, v_wind, alpha_slope, 
-                        grip_index_tyre, wet_mu_max_ref_tyre, 
-                        x_correct_mu_max_track, optimal_slip_ratio_track) + 
+                          c_decel, c_max_brake){
+  f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, 
+                         v_start_decel, v_end_decel, v_wind, alpha_slope, 
+                         grip_index_tyre, wet_mu_max_ref_tyre, 
+                         x_correct_mu_max_track, optimal_slip_ratio_track) + 
     f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, 
-                       v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)}
+                       v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
+  }
 
 # Total slip at constant speed
 
