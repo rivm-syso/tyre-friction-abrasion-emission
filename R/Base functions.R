@@ -47,21 +47,72 @@
 #' f_roll_force, f_drag_force, f_slope_force, f_brake_force, f_accel_force, f_c_decel_inert, 
 #' f_centripet_force and f_bank_force. 
 #'
-#'@section Roll resistance force in N:
-#'
-f_roll_force <- function(c_roll, m_vehicle, grav_constant) {c_roll*m_vehicle*grav_constant}
-
-#'@section Drag resistance force in N:
+#'#'@section Aerodynamic drag force
+#Aerodynamic drag force is defined as the force which is faced by the vehicle as it moves through the air.
+#The aerodynamic drag force is present during acceleration, deceleration and constant speed maneuvers.
+#It is calculated from the density of air (rho_air), the velocity of the wind (v_wind) and vehicle (v_vehicle) 
+#as well as the vehicles drag coefficient (c_drag) and the vehicle frontal area (A_vehicle).
 
 f_drag_force <- function(c_drag, A_vehicle, rho_air, v_vehicle, v_wind) {pmax(0,c_drag*A_vehicle*rho_air*(((v_vehicle)+v_wind)^2)/2)}
 
-#'@section Slope force in N:
+#'@section Roll resistance force
+# Rolling resistance force (F_roll) is defined as the force that resists the motion the tyres rolling on the track surface.
+# The rolling resistance force is present during acceleration, deceleration and constant speed maneuvers.
+# It is calculated as the product of the roll resistance coefficient (c_roll) defined for the tyre-track interface, 
+# the vehicles mass (m_vehicle) and the gravitational acceleration constant (grav_constant).
+
+f_roll_force <- function(c_roll, m_vehicle, grav_constant) {c_roll*m_vehicle*grav_constant}
+
+#'@section Slope force
+#The slope force (also called grade force) refers to the in- or declination of the surface road to the horizontal in longitudinal direction.
+# The slope force (F_slope) is calculated as the product of the vehicle mass (m_vehicle), the gravitational constant (grav_constant) 
+# and the sinus of the slope angle of the road (alpha_slope) in degrees.
+# As such, slope force is zero in case there is no road in- or declination (alpha_slope = 0).
+# It is included as a longitudinal resistant longitudinal force in case the road inclines (alpha_slope > 0) and the vehicle thus drives 
+# in uphill direction. The slope force is as such present as resistant longitudinal force during upon uphill driving acceleration, deceleration 
+# and constant speed maneuvers. In case the road declines (alpha_slope < 0) the slope force is considered a propulsive force that 
+# does not yield friction at the tyres. 
+# However, at steep hills and low speed limits, the driver may need to use the brakes to decelerate or to keep a constant speed under the speed limit.
+# In that case slope force is included in the calculation of the level of brake force that is needed for deceleration and constant speed maneuvers.
 
 f_slope_force <- function(m_vehicle, grav_constant, alpha_slope) {m_vehicle*grav_constant*sin(alpha_slope)}
 
-#'@section Inertia force upon acceleration in N: 
+#'@section Brake force
+#'Brake force (F_brake) is the force acting on the tyres as the driver uses the brakes of the vehicle.
+#'The calculation of the level of brake force needed strongly depends on the maneuver the performed.
+#'In case of a deceleration maneuver the brake force needed is calculated from the deceleration constant of the performed maneuver (c_decel),
+#'the other resistant forces that also slow the vehicle down, e.g. aerodynamic drag force, rolling resistance force and inclining slope force,
+#'the mass of the vehicle and the mass of the rotating parts of the vehicle.
+#'The minimum brake force is limited to zero.
+#'The slope force is negative at downhill driving, so that more brake force is needed to compensate downhill slope force as a propulsive.
+
+f_decel_brake_force <- function(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
+{pmax(0,(c_decel * (m_vehicle + m_rotate) 
+      - f_roll_force(c_roll, m_vehicle, grav_constant)
+      - f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
+      - f_slope_force(m_vehicle, grav_constant, alpha_slope)))}
+
+# Brake force can be needed in cases the vehicle is driving steeply downhill and the driver needs to remain under the speed limit.
+# In that case the deceleration constant is zero (c_decel =0), so that the equation for the brake force needed can be simplified to:
+
+f_const_speed_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
+{pmax(0, -(f_roll_force(c_roll, m_vehicle, grav_constant)
+             + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
+             + f_slope_force(m_vehicle, grav_constant, alpha_slope)))}
+
+# For constant speed driving, the minimum brake force is also limited to zero.       
+
+#'@section Inertia force 
+# Inertia force lets bodies remain in their state, either at rest or in motion.
+# The direction of inertia opposes the change of the speed.
+# As such it acts as a resistive force for an accelerating vehicle and as a tractive force for a decelerating vehicle.
+# The vehicle thus needs to overcome an inertia force during acceleration, 
+# which is calculated as the sum of the vehicle mass and rotating parts multiplied by the acceleration constant the driver performs.
 
 f_accel_inert_force <- function(m_vehicle, m_rotate, c_accel) {(m_vehicle+m_rotate)*c_accel}
+
+
+
 
 #'@section Total longitudinal force during acceleration
 #'The total resistant forces during acceleration are the inertia force plus roll, drag and uphill slope force. 
@@ -94,9 +145,7 @@ f_max_brake_force <- function(m_vehicle, m_rotate, c_max_brake) {(m_vehicle+m_ro
 
 # The additional brake force needed upon deceleration is calculated from the deceleration constant of the maneuver and the other resistant forces already slowing the vehicle down
 
-f_decel_brake_force <- function(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope)
-{pmax(0,(c_decel * (m_vehicle + m_rotate)) 
-      - f_decel_resist_force(m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope))}
+
 
 #'@section Brake force needed to remain under speed limit at downhill slope
 
@@ -114,10 +163,6 @@ f_downhill_resist_force <- function (c_roll, m_vehicle, grav_constant, c_drag, r
 
 # Additional brake force is needed in case the downhill slope force is greater than the resistant force
 
-f_downhill_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
-{-(pmax(0,
-      f_downhill_slope_force(m_vehicle, grav_constant, alpha_slope)
-      + f_downhill_resist_force(c_roll, grav_constant, c_drag, rho_air, A_vehicle, v_vehicle, v_wind)))}
 
 #'@section Centripetal force in cornering in N:
 
