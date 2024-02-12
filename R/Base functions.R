@@ -14,8 +14,8 @@
 #'@param c_max_brake The maximum braking constant the tyres can achieve (m/s^2)
 #'@param wet_mu_max_ref_tyre The friction coefficient of an EU reference tyre on wet asphalt (0.85)
 #'@param optimal_slip_ratio_tyre_track The slip performed on the tyre at the peak friction coefficient
-## Road surface underground parameters
 
+## Road surface underground parameters
 #'@param apha_bank_slope Bank slope of the road in latitudinal direction (degrees)
 #'@param alpha_slope Slope of the road in longitudinal direction (degrees)' 
 #'@param optimal_ratio_slip_track Optimal slip ratio of the track underground
@@ -338,8 +338,5 @@ f_decel_distance <- function(v_start, v_end, c_decel )
   {v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
-
-#'@param r_corner Radius of the corner (m)
-#'@param corner_angle Angle of the corner (degrees)
 
 f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_corner*pi)}
