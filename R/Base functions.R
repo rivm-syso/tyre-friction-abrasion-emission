@@ -38,16 +38,11 @@
 #'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
 #'@param v_start_decel Vehicle velocity at start of a deceleration maneuver in m/s
 #'@param v_vehicle Velocity of driving maneuver (m/s)
-#
-## Parameters for calibration (now set as 7 according to literature)
-#'@param x_linear_lat_vs_long_slip A factor to translate increase of slip by lateral mu vs increase of slip by longitidunal mu 
-#
+
+
 #### Longitudinal friction force Functions
-#' Friction force
-#' These functions are used to calculate the friction force. The functions include
-#' f_roll_force, f_drag_force, f_slope_force, f_brake_force, f_accel_force, f_c_decel_inert, 
-#'
-#'#'@section Aerodynamic drag force
+
+#'@section Aerodynamic drag force
 #Aerodynamic drag force is defined as the force which is faced by the vehicle as it moves through the air.
 #The aerodynamic drag force is present during acceleration, deceleration and constant speed maneuvers.
 #It is calculated from the density of air (rho_air), the velocity of the wind (v_wind) and vehicle (v_vehicle) 
