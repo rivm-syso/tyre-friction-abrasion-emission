@@ -10,61 +10,220 @@ Goal is to replicate the scripting and use maneuvre functions and data instead. 
 The script is taken from IDIADA_motorway_viii.R.
 
 ```{r data}
-
-
-# Leon Tyre Test Track Simulations Rural v
-
-## Input vehicle specifications Ford Escape Kuga
-
-#Vehicle mass in kg
-m_vehicle= 1660
-#Vehicle surface area in m^2
-A_vehicle=2.629
-#Vehicle aerodynamic drag coefficient
-c_drag= 0.347
-#Vehicle acceleration from 0-100 km.h^-1 in s
-t_0_100kmh_vehicle= 9.2
-
-# Fraction of vehicle mass that consists of rotating parts (kg/kg)
-frac_mass_rotate_parts_vehicle = runif(n=1000, 0.13,0.15)
-
-## Input tyre performance data
-
-tyre_name ="Linglong"
-# minimum roll coefficient (kg/t) according to EU label
-c_roll_tyre_min = 7.8
-# maximum roll coefficient (kg/t) according to EU label
-c_roll_tyre_max = 9.0
-# minimum grip index according to EU label
-grip_index_tyre_min = 1.25
-# maximum grip index according to EU label
-grip_index_tyre_max = 1.39
-# indicate track underground as "dry asphalt" or "wet asphalt"
-track_underground = "dry_asphalt"
-
-
-#### setup tyre grip performance simulation
-grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
-#### peak friction coefficient of reference tyre under reference conditions in EU wet grip tests
-mu_max_ref_tyre_wet = 0.85
-
-## Physics data ##
-### Gravitational constant in m.s^-2
-grav_constant = 9.81
-
-# Source tyre friction funtions
+library(tidyverse)
+# 
+# # Leon Tyre Test Track Simulations Rural v
+# 
+# ## Input vehicle specifications Ford Escape Kuga
+# 
+# #Vehicle mass in kg
+# m_vehicle= 1660
+# #Vehicle surface area in m^2
+# A_vehicle=2.629
+# #Vehicle aerodynamic drag coefficient
+# c_drag= 0.347
+# #Vehicle acceleration from 0-100 km.h^-1 in s
+# t_0_100kmh_vehicle= 9.2
+# 
+# # Fraction of vehicle mass that consists of rotating parts (kg/kg)
+# frac_mass_rotate_parts_vehicle = runif(n=1000, 0.13,0.15)
+# 
+# ## Input tyre performance data
+# 
+# tyre_name ="Linglong"
+# # minimum roll coefficient (kg/t) according to EU label
+# c_roll_tyre_min = 7.8
+# # maximum roll coefficient (kg/t) according to EU label
+# c_roll_tyre_max = 9.0
+# # minimum grip index according to EU label
+# grip_index_tyre_min = 1.25
+# # maximum grip index according to EU label
+# grip_index_tyre_max = 1.39
+# # indicate track underground as "dry asphalt" or "wet asphalt"
+# track_underground = "dry_asphalt"
+# 
+# 
+# #### setup tyre grip performance simulation
+# grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
+# #### peak friction coefficient of reference tyre under reference conditions in EU wet grip tests
+# mu_max_ref_tyre_wet = 0.85
+# 
+# ## Physics data ##
+# ### Gravitational constant in m.s^-2
+# grav_constant = 9.81
+# 
+# # Source tyre friction funtions
 source("R/Base functions.R")
+# 
+# ### linearity slip and friction correction at wet and dry asphalt
+# if (track_underground == "wet_asphalt") {
+#   x_correct_road = 1
+# }
+# 
+# 
+# if (track_underground == "dry_asphalt") {
+#   x_correct_road = runif(n = 1000, 1.07, 1.47)
+# }
 
-### linearity slip and friction correction at wet and dry asphalt
-if (track_underground == "wet_asphalt") {
-  x_correct_road = 1
-}
+
+n.Runs = 1000
+local_path <- "C:/Users/quikj/rivm.nl/LEON-Tyres - WP3 Microplastics/Data/TWP emission data_IDIADA_v01.xlsx"
+
+local_path <- "data/TWP emission data_IDIADA_v01.xlsx"
+Maneuver_data <- readxl::read_excel(path = local_path, sheet = "Maneuver data")
+Sector_data <- readxl::read_excel(path = local_path, sheet = "Sector data")
+Vehicle_data <- readxl::read_excel(path = local_path, sheet = "Vehicle data")
+
+Tyre_data <- readxl::read_excel(path = local_path, sheet = "Tyre_data")
+
+Constants <- readxl::read_excel(path = local_path, sheet = "Constants")
+Grip_Index_convtable <- readxl::read_excel(path = local_path, sheet = "Label fuel efficiency class")
+Fuel_Eff_convtable <- readxl::read_excel(path = local_path, sheet = "Label wet grip class")
 
 
-if (track_underground == "dry_asphalt") {
-  x_correct_road = runif(n = 1000, 1.07, 1.47)
-}
+source("R/Tyrelabel_conversion.R")
 
+```
+
+The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.
+
+The forces are calculated using these functions:
+
+-   f_accel_long_force
+
+-   f_decel_long_force
+
+-   f_const_speed_long_force
+
+-   f_lat_force
+
+Slip is calculated using:
+
+-   f_accel_long_slip
+
+-   f_decel_long_slip
+
+-   f_const_speed_long_slip
+
+-   f_lat_slip
+
+The distance is calculated using:
+
+-   f_accel_distance
+
+-   f_decel_distance
+
+-   f_corner_distance
+
+```{r f_accel_long_force}
+
+# for one tyre and one sector and one maneuvre:
+
+#TODO: selection based on track, maneuver code, tyre and verhicle
+
+test_accel_Force <- f_accel_long_force(c_roll = runif(n.Runs, 
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1],
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$min,
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1], 
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$max), 
+                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                   grav_constant = Constants |> 
+                     filter(Name == "grav_constant") |> pull(value),
+                   c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                   A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                   rho_air = Constants |> 
+                     filter(Name == "rho_air") |> pull(value), 
+                   v_start_accel = Maneuver_data$`Start speed (m/s)`[1], 
+                   v_end_accel = Maneuver_data$`End speed (m/s)`[1], 
+                   v_wind = 0, # uniform distribution of variability? 
+                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
+                   m_rotate = runif(n.Runs,
+                                    Constants |> 
+                     filter(Name == "min_rotating_fraction") |> pull(value),
+                     Constants |> 
+                     filter(Name == "max_rotating_fraction") |> pull(value)), 
+                   c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[1])
+
+
+```
+
+```{r f_const_speed_long_force}
+
+
+test_const_Force <- f_const_speed_long_force(c_roll = runif(n.Runs, 
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1],
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$min,
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1], 
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$max), 
+                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                   grav_constant = Constants |> 
+                     filter(Name == "grav_constant") |> pull(value),
+                  c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                  A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
+                   rho_air = Constants |> 
+                     filter(Name == "rho_air") |> pull(value), 
+                   v_vehicle = Maneuver_data$`Start speed (m/s)`[1], 
+                   # v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
+                   v_wind = 0, # uniform distribution of variability? 
+                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1])
+
+
+```
+
+```{r f_decel_long_force}
+
+
+test_decel_Force <- f_decel_long_force(c_roll = runif(n.Runs, 
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1],
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$min,
+                                  fRolCoef_Tlabel(Label_fuelleff = 
+                                                    Tyre_data$`Fuel efficiency class`[1], 
+                                                  vehicle_class = 
+                                                    Tyre_data$Vehicle_class)$max), 
+                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                   grav_constant = Constants |> 
+                     filter(Name == "grav_constant") |> pull(value),
+                  c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                  A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
+                   rho_air = Constants |> 
+                     filter(Name == "rho_air") |> pull(value), 
+                   v_start_decel = Maneuver_data$`Start speed (m/s)`[1], 
+                   v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
+                   v_wind = 0, # uniform distribution of variability? 
+                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
+                   m_rotate = runif(n.Runs,
+                                  Constants |>
+                   filter(Name == "min_rotating_fraction") |> pull(value),
+                   Constants |>
+                   filter(Name == "max_rotating_fraction") |> pull(value)),
+                   c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`)
+
+
+```
+
+```{r}
+
+# m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope
+
+ttest_lat_force <- f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                                grav_constant = Constants |> 
+                                  filter(Name == "grav_constant") |> pull(value),
+                                r_corner = Sector_data$`Corner radius (m)`[1],
+                                alpha_bank_slope= Sector_data$`Latitudinal slope (%)`[1],
+                                # rho_air = Constants |> 
+                                #   filter(Name == "rho_air") |> pull(value), 
+                                v_vehicle = Maneuver_data$`Start speed (m/s)`[1] # average of start and end?
+)
 
 ```
 
@@ -170,6 +329,6 @@ IDIADA_const_speed_friction_work_sector_1 = f_const_speed_friction_work(sector_d
 
 ```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the Preview button or press Ctrl+Shift+K to preview the HTML file).
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike Knit, Preview does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
