@@ -105,3 +105,4 @@ library(igraph)
 netw <- graph_from_data_frame(Pweg2a[,c("vertIDbegin", "vertIDend", "WVK_ID", "weight")],
                               directed = F)
 shortest_paths(netw, from = "537", to = V(netw)["221"])
+ 
