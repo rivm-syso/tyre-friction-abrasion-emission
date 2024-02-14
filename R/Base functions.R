@@ -1,4 +1,6 @@
-### List of parameters
+#### Base Functions as needed for calculating the average friction force on all tyres of a vehicle
+
+# to learn about these roxygen tags see: https://roxygen2.r-lib.org/articles/rd.html
 
 ## Vehicle parameters
 
@@ -38,7 +40,6 @@
 #'@param v_end_decel Vehicle velocity at end of the deceleration event in m/s
 #'@param v_start_decel Vehicle velocity at start of a deceleration maneuver in m/s
 #'@param v_vehicle Velocity of driving maneuver (m/s)
-
 
 #### Longitudinal friction force Functions
 
@@ -282,7 +283,7 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
 #'@section Resultant latitudinal force
 #'Then bank slope force works in opposite direction to the centripetal force, 
 #'so that the resultant lateral forces on the tyres is the centripetal force minus the bank force.
-#'In case the bank slope is negative,centripetal and bank force work in the same direction. 
+#'In case the bank slope is negative, centripetal and bank force work in the same direction. 
 #'In case the bank slope force is greater than the centripetal force, 
 #'the resultant latitudinal force equals the bank force minus the centripetal force.
 #'The resultant latitudinal force is not to be negative. 
@@ -301,7 +302,7 @@ f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant)
 #' with the normal load force perpendicular to the latitudinal forces
 
 f_lat_mu_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-{f_latitude_force(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)* 
+{f_lat_force(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)* 
     1/(f_lat_normal_load_force(alpha_bank_slope,m_vehicle, grav_constant))}
 
 #' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
@@ -335,8 +336,7 @@ f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
 #'@section Deceleration distance in m:
 
 f_decel_distance <- function(v_start, v_end, c_decel )
-  {v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
+{v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
-
 f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_corner*pi)}
