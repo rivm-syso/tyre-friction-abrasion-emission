@@ -271,7 +271,7 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A
 #'@section Centripetal force at corners
 
 f_centripet_force <- function(m_vehicle , v_vehicle , r_corner)
-  {m_vehicle*(v_vehicle^2)/r_corner}
+  {cos(alpha_bank_slope)*m_vehicle*(v_vehicle^2)/r_corner}
 
 #'@section Bank slope force 
 #'Bank slope force slope is positive if the high side of the bank is on the outside of the corner. 
