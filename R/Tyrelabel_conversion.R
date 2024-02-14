@@ -1,7 +1,7 @@
 
-library(readxl)
+# library(readxl)
 
-Tyre_Label_table <- readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label fuel efficiency class",skip=1)
+# Tyre_Label_table <- readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label fuel efficiency class",skip=1)
 
 fRolCoef_Tlabel <- function(Label_fuelleff="A", # A, B, C, D, E
                             vehicle_class="C1",
@@ -22,10 +22,10 @@ fRolCoef_Tlabel <- function(Label_fuelleff="A", # A, B, C, D, E
  
   list(min= dataprep |> filter(`Vehicle class` == vehicle_class & 
                                     `Class Min/Max` == "min" &  
-                                    `Label fuel efficiency class` == Label_fuelleff) |> pull( `roll coefficient`),
+                                    `Label_fuel_efficiency_class` == Label_fuelleff) |> pull( `roll coefficient`),
        max = dataprep|> filter(`Vehicle class` == vehicle_class & 
                                  `Class Min/Max` == "max" &  
-                                 `Label fuel efficiency class` == Label_fuelleff) |> pull( `roll coefficient`))
+                                 `Label_fuel_efficiency_class` == Label_fuelleff) |> pull( `roll coefficient`))
    
 }
 
