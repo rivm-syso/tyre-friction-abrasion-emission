@@ -89,6 +89,7 @@ f_c_full_brake <-
             x_correct_road) {
     f_c_full_brake_wet(grip_index_tyre, c_full_brake_ref_tyre_wet) * x_correct_road
   }
+
 ### linearity at low slip regime between friction coefficient and slip
 f_x_slip_long_force <-
   function(grip_index_tyre,
@@ -97,6 +98,7 @@ f_x_slip_long_force <-
            optimal_slip) {
     f_mu_max(grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet) / optimal_slip
   }
+
 x_slip_long_force = f_x_slip_long_force(grip_index_tyre,
                                         x_correct_road,
                                         mu_max_ref_tyre_wet,
