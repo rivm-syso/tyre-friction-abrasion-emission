@@ -83,6 +83,16 @@ Fuel_Eff_convtable <- readxl::read_excel(path = local_path, sheet = "Label wet g
 
 source("R/Tyrelabel_conversion.R")
 
+#TODO: selection based on track, maneuver code, tyre and verhicle
+c_roll_uniform <- runif(n.Runs, fRolCoef_Tlabel(Label_fuelleff = 
+                                                  Tyre_data$`Fuel efficiency class`[1],
+                                                vehicle_class = 
+                                                  Tyre_data$Vehicle_class)$min,
+                        fRolCoef_Tlabel(Label_fuelleff = 
+                                          Tyre_data$`Fuel efficiency class`[1], 
+                                        vehicle_class = 
+                                          Tyre_data$Vehicle_class)$max)
+
 ```
 
 *The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.*
@@ -102,16 +112,6 @@ source("R/Tyrelabel_conversion.R")
 # for one tyre and one sector and one maneuvre:
 
 #TODO: selection based on track, maneuver code, tyre and verhicle
-
-c_roll_uniform <- runif(n.Runs, fRolCoef_Tlabel(Label_fuelleff = 
-                                Tyre_data$`Fuel efficiency class`[1],
-                              vehicle_class = 
-                                Tyre_data$Vehicle_class)$min,
-      fRolCoef_Tlabel(Label_fuelleff = 
-                        Tyre_data$`Fuel efficiency class`[1], 
-                      vehicle_class = 
-                        Tyre_data$Vehicle_class)$max)
-
 
 test_accel_Force <- f_accel_long_force(c_roll = c_roll_uniform, 
                    m_vehicle = Vehicle_data$`Mass (kg)`[1],
@@ -207,18 +207,24 @@ ttest_lat_force <- f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
 
 ```{r f_accel_long_slip}
 
-f_accel_long_slip(c_roll, 
-                  m_vehicle, 
-                  grav_constant, 
-                  c_drag, 
-                  A_vehicle, 
-                  rho_air,
-                  v_start_accel, 
-                  v_end_accel, 
-                  v_wind, 
-                  alpha_slope, 
-                  m_rotate, 
-                  c_accel, 
+f_accel_long_slip(c_roll = c_roll_uniform, 
+                  m_vehicle = Vehicle_data$`Mass (kg)`[1], 
+                  grav_constant = Constants |> 
+                     filter(Name == "grav_constant") |> pull(value), 
+                  c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
+                  A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                  rho_air = Constants |> 
+                     filter(Name == "rho_air") |> pull(value),
+                  v_start_accel = Maneuver_data$`Start speed (m/s)`[1], 
+                  v_end_accel = Maneuver_data$`End speed (m/s)`[1], 
+                  v_wind = 0, # uniform distribution of variability?  
+                  alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
+                  m_rotate = runif(n.Runs,
+                                    Constants |> 
+                     filter(Name == "min_rotating_fraction") |> pull(value),
+                     Constants |> 
+                     filter(Name == "max_rotating_fraction") |> pull(value)), 
+                  c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[1], 
                   optimal_slip_ratio_track)
 ```
 
