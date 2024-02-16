@@ -5,9 +5,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.
+*Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.*
 
-The script is taken from IDIADA_motorway_viii.R.
+*The script is taken from IDIADA_motorway_viii.R.*
 
 ```{r data}
 library(tidyverse)
@@ -85,35 +85,17 @@ source("R/Tyrelabel_conversion.R")
 
 ```
 
-The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.
+*The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.*
 
-The forces are calculated using these functions:
+*The forces are calculated using these functions:*
 
--   f_accel_long_force
+-   *f_accel_long_force*
 
--   f_decel_long_force
+-   *f_decel_long_force*
 
--   f_const_speed_long_force
+-   *f_const_speed_long_force*
 
--   f_lat_force
-
-Slip is calculated using:
-
--   f_accel_long_slip
-
--   f_decel_long_slip
-
--   f_const_speed_long_slip
-
--   f_lat_slip
-
-The distance is calculated using:
-
--   f_accel_distance
-
--   f_decel_distance
-
--   f_corner_distance
+-   *f_lat_force*
 
 ```{r f_accel_long_force}
 
@@ -121,15 +103,17 @@ The distance is calculated using:
 
 #TODO: selection based on track, maneuver code, tyre and verhicle
 
-test_accel_Force <- f_accel_long_force(c_roll = runif(n.Runs, 
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1],
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$min,
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1], 
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$max), 
+c_roll_uniform <- runif(n.Runs, fRolCoef_Tlabel(Label_fuelleff = 
+                                Tyre_data$`Fuel efficiency class`[1],
+                              vehicle_class = 
+                                Tyre_data$Vehicle_class)$min,
+      fRolCoef_Tlabel(Label_fuelleff = 
+                        Tyre_data$`Fuel efficiency class`[1], 
+                      vehicle_class = 
+                        Tyre_data$Vehicle_class)$max)
+
+
+test_accel_Force <- f_accel_long_force(c_roll = c_roll_uniform, 
                    m_vehicle = Vehicle_data$`Mass (kg)`[1],
                    grav_constant = Constants |> 
                      filter(Name == "grav_constant") |> pull(value),
@@ -154,15 +138,7 @@ test_accel_Force <- f_accel_long_force(c_roll = runif(n.Runs,
 ```{r f_const_speed_long_force}
 
 
-test_const_Force <- f_const_speed_long_force(c_roll = runif(n.Runs, 
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1],
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$min,
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1], 
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$max), 
+test_const_Force <- f_const_speed_long_force(c_roll = c_roll_uniform, 
                    m_vehicle = Vehicle_data$`Mass (kg)`[1],
                    grav_constant = Constants |> 
                      filter(Name == "grav_constant") |> pull(value),
@@ -181,15 +157,7 @@ test_const_Force <- f_const_speed_long_force(c_roll = runif(n.Runs,
 ```{r f_decel_long_force}
 
 
-test_decel_Force <- f_decel_long_force(c_roll = runif(n.Runs, 
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1],
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$min,
-                                  fRolCoef_Tlabel(Label_fuelleff = 
-                                                    Tyre_data$`Fuel efficiency class`[1], 
-                                                  vehicle_class = 
-                                                    Tyre_data$Vehicle_class)$max), 
+test_decel_Force <- f_decel_long_force(c_roll = c_roll_uniform, 
                    m_vehicle = Vehicle_data$`Mass (kg)`[1],
                    grav_constant = Constants |> 
                      filter(Name == "grav_constant") |> pull(value),
@@ -211,7 +179,7 @@ test_decel_Force <- f_decel_long_force(c_roll = runif(n.Runs,
 
 ```
 
-```{r}
+```{r f_lat_force}
 
 # m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope
 
@@ -227,6 +195,41 @@ ttest_lat_force <- f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
 
 ```
 
+*Slip is calculated using:*
+
+-   *f_accel_long_slip*
+
+-   *f_decel_long_slip*
+
+-   *f_const_speed_long_slip*
+
+-   *f_lat_slip*
+
+```{r f_accel_long_slip}
+
+f_accel_long_slip(c_roll, 
+                  m_vehicle, 
+                  grav_constant, 
+                  c_drag, 
+                  A_vehicle, 
+                  rho_air,
+                  v_start_accel, 
+                  v_end_accel, 
+                  v_wind, 
+                  alpha_slope, 
+                  m_rotate, 
+                  c_accel, 
+                  optimal_slip_ratio_track)
+```
+
+*The distance is calculated using:*
+
+-   *f_accel_distance*
+
+-   *f_decel_distance*
+
+-   *f_corner_distance*
+
 ```{r normal_load_force}
 ## Setup vehicle parameters for track friction simulations
 
@@ -234,11 +237,11 @@ ttest_lat_force <- f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
 normal_load_force <- f_normal_load_force(m_vehicle=m_vehicle, grav_constant)
 ```
 
-The new base functions now include slope in calculation of `normal_load_force`.
+*The new base functions now include slope in calculation of `normal_load_force`.*
 
-1.  But where is this normal_load_force used?
+1.  *But where is this normal_load_force used?*
 
-2.  Also, define variables, as you can see errors occur with just mentioning them with incorrect order...
+2.  *Also, define variables, as you can see errors occur with just mentioning them with incorrect order...*
 
 ```{r c_accel_max}
 ### Vehicle maximum acceleration constant (m.s^-2)
@@ -246,7 +249,7 @@ The new base functions now include slope in calculation of `normal_load_force`.
 c_accel_max <-f_c_accel_max(t_0_100kmh_vehicle)
 ```
 
-1.  Where is `c_accel_max` used? It is used when the acceleration rate is not known and needs to be estimated based on vehicle specifications, such as time to 100 kph.
+1.  *Where is `c_accel_max` used? It is used when the acceleration rate is not known and needs to be estimated based on vehicle specifications, such as time to 100 kph.*
 
 ```{r m_rotate}
 ### mass (kg) of rotating parts
@@ -254,7 +257,7 @@ m_rotate = f_m_rotate(frac_mass_rotate_parts_vehicle=frac_mass_rotate_parts_vehi
                       m_vehicle=m_vehicle)
 ```
 
-m_rotate is uncertain and is typically between 13 and 15 percent of the vehicle weight (REF needed).
+*m_rotate is uncertain and is typically between 13 and 15 percent of the vehicle weight (REF needed).*
 
 ```{r f_mu_max}
 #### calculate peak friction coefficient between tyre and track
@@ -263,7 +266,7 @@ mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre=grip_index_tyre,
                                         wet_mu_max_ref_tyre=mu_max_ref_tyre_wet)
 ```
 
-The peak friction coefficient is calculated using an uncertain conversion of tyre label to grip index and wet grip index to dry grip index to calculate the peak friction coefficient between the tyre and the track.
+*The peak friction coefficient is calculated using an uncertain conversion of tyre label to grip index and wet grip index to dry grip index to calculate the peak friction coefficient between the tyre and the track.*
 
 ```{r}
 #### calculate linear increase constant 'x' for track
@@ -275,60 +278,6 @@ x_slip_long_force_tyre_track <- f_x_slip_long_force(grip_index_tyre,
 
 ```
 
-The is quite a departure here in Base function in how slip linearity here is used. There are now seperate functions per maneuvre.
+*The is quite a departure here in Base function in how slip linearity here is used. There are now seperate functions per maneuvre.*
 
-1.  How is with deceleration accounted for when it is just wheel slip and when breaking slip?
-
-```{r rest}
-
-
-
-#### brake deceleration constant of reference tyre under reference conditions in EU wet grip tests
-c_full_brake_ref_tyre_wet = 0.68*grav_constant
-### calculate track-tyre deceleration constant (m.s^-2) at full wheel lock braking
-c_full_brake_tyre_track <- f_c_full_brake(grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-#### tyre roll coefficient as range
-c_roll =runif(n=1000, c_roll_tyre_min,c_roll_tyre_max)/1000
-
-
-
-# IDIADA track simulations
-
-## Sector 1st brake sector input
-
-sector_distance = (3193-940)*2
-sector_velocity_kmh = 130
-sector_start_velocity_kmh = 50
-sector_end_velocity_kmh = 50
-sector_underground = "dry asphalt"
-sector_alpha_slope = 0
-alpha_slope = sector_alpha_slope
-sector_latitude = 0 
-sector_corner_radius = 0
-sector_bank_slope = 0
-sector_corner_angle = 0
-sector_decel_g = 2.94/grav_constant
-c_decel= sector_decel_g*grav_constant
-sector_accel_g= 1.5/grav_constant
-c_accel= sector_accel_g*grav_constant
-
-sector_1_repeats = 1
-
-## Sector 1 straight sector simulations
-IDIADA_accel_distance_sector_1 = f_accel_distance(sector_start_velocity_kmh, sector_velocity_kmh , c_accel)
-IDIADA_accel_slip_sector_1 = f_accel_slip(c_drag, A_vehicle, rho_air,sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope, m_rotate, c_accel, grip_index_tyre, x_correct_road, mu_max_ref_tyre_wet, optimal_slip)
-IDIADA_accel_friction_work_sector_1 = f_accel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air,sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope, m_rotate, c_accel)
-
-IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
-IDIADA_decel_slip_sector_1 = f_decel_brake_slip(c_decel, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant ,alpha_slope, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-IDIADA_decel_friction_work_sector_1 = f_decel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope, c_decel, m_rotate, grip_index_tyre, x_correct_road,c_full_brake_ref_tyre_wet)
-
-IDIADA_const_speed_distance_sector_1 = f_const_speed_distance(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel)
-IDIADA_const_speed_slip_sector_1 = f_const_speed_slip(m_vehicle, grav_constant, alpha_slope, c_drag, A_vehicle, rho_air, sector_velocity_kmh, v_wind,c_roll, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-IDIADA_const_speed_friction_work_sector_1 = f_const_speed_friction_work(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel, c_drag, A_vehicle, rho_air, v_wind , c_roll, m_vehicle, grav_constant , alpha_slope, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-
-```
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the Preview button or press Ctrl+Shift+K to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike Knit, Preview does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+1.  *How is with deceleration accounted for when it is just wheel slip and when breaking slip?splayed.*

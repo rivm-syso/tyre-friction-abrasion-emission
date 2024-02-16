@@ -2,6 +2,10 @@
 
 # to learn about these roxygen tags see: https://roxygen2.r-lib.org/articles/rd.html
 
+
+### MISSING variable descriptions
+#'@param optimal_slip_ratio_track
+
 ## Vehicle parameters
 
 #'@param A_vehicle Frontal area of vehicle in (m^2)
@@ -321,7 +325,8 @@ f_const_speed_brake_slip <- function(m_vehicle, grav_constant, alpha_slope, c_ro
 #' The total longitudinal slip during an acceleration maneuver is calculated as wheelspin only:
 
 f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                               v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)
+                               v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, 
+                               c_accel, optimal_slip_ratio_track)
 {f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
                         v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)}
 
@@ -359,8 +364,9 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
 #'The resultant latitudinal force is not to be negative. 
 #'Therefore, the rules above are included in the routine as ((centripet_force - bank_force)^2)^0.5
 
-f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-{((f_centripet_force(m_vehicle , v_vehicle , r_corner) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
+f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope){
+  (f_centripet_force(m_vehicle , v_vehicle , r_corner) - 
+      f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )} 
 
 #' @section Latitudinal slip
 
