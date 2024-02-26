@@ -224,6 +224,16 @@ f_mu_max_tyre_track <- function (grip_index_tyre, wet_mu_max_ref_tyre,x_correct_
   wet_mu_max_tyre_track * x_correct_mu_max_track
 }
 
+
+### brake deceleration of candidate tyre correction from wet grip testing to specific road track m.s^-2
+f_c_max_brake <-
+  function (grip_index_tyre, # Grip index, derived from tyre label
+            c_brake_ref_tyre_wet, # ref testing break decelaration (0.68 g)
+            x_correct_road, # correction for calculating dry situation from wet test
+            grav_constant) {
+    (grip_index_tyre * c_brake_ref_tyre_wet * grav_constant) / 1.25 * x_correct_road
+  }
+
 #'The optimal slip ratio refers to level of slip performed on the tyre during a maneuver performed with a friction coefficient (mu_tyre_track)
 #'that is equal or larger than the peak friction coefficient, such as full acceleration or steep downhill driving on slippery surface as ice.
 #'The maneuvers simulated however are in the so called low slip regime (mu_tyre_track < mu_max_tyre_track),
@@ -309,26 +319,32 @@ f_decel_wheelspin_slip <- function(m_vehicle,
 # The maximum brake force ic calculated as 
 #' the maximum braking deceleration constant (c_max_brake) achieved in a the tyre test at the track
 #' multiplied with the sum of the vehicle mass and the mass of the rotating parts.
-
-f_max_brake_force <- function(m_vehicle, m_rotate, c_max_brake)
-{(m_vehicle+m_rotate)*c_max_brake}
-
 #' Brake slip during deceleration is then calculated as 
 #' the brake force needed to decelerate divided by the maximum brake force. 
 
 f_decel_brake_slip <-function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, 
-                               rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
-{f_decel_brake_force(c_decel, m_vehicle, m_rotate, c_roll, 
-                     grav_constant, rho_air, v_start_decel, v_end_decel, 
-                     v_wind, alpha_slope) *
-    1 / (f_max_brake_force(m_vehicle, m_rotate, c_max_brake))}
+                               rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake){ 
+  
+  max_brake_force = (m_vehicle+m_rotate)*c_max_brake
+  
+  f_decel_brake_force(c_decel, m_vehicle, m_rotate, c_roll, 
+                      grav_constant, rho_air, v_start_decel, v_end_decel, 
+                      v_wind, alpha_slope) *
+    1 / max_brake_force
+}
 
 #' Brake slip at constant speed driving is calculated as 
 #' the brake force needed to remain under the speed limit divided by the maximum brake force.
 
-f_const_speed_brake_slip <- function(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_max_brake)
-{f_const_speed_brake_force (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)*
-    1/(f_max_brake_force(m_vehicle, m_rotate, c_max_brake))}
+f_const_speed_brake_slip <- function(m_vehicle, grav_constant, alpha_slope, 
+                                     c_roll, c_drag, A_vehicle, rho_air,
+                                     v_vehicle, v_wind, c_max_brake){
+  max_brake_force = (m_vehicle+m_rotate)*c_max_brake
+  
+  f_const_speed_brake_force (m_vehicle, grav_constant, alpha_slope, 
+                             c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)*
+    1/max_brake_force
+}
 
 #'@section Summing wheelspin and brake slip per maneuver
 #'
@@ -361,14 +377,14 @@ f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_consta
 {  mu_max_tyre_track <- f_mu_max_tyre_track(grip_index_tyre, 
                                             wet_mu_max_ref_tyre, 
                                             x_correct_mu_max_track)
-  f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, 
-                        v_end_decel, v_wind, alpha_slope, 
-                        c_decel, mu_max_tyre_track=mu_max_tyre_track, 
-                        optimal_slip_ratio_tyre_track) *
-    (1-f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, 
-                          v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)) +
-    f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, 
-                       rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)}
+f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, 
+                       v_end_decel, v_wind, alpha_slope, 
+                       c_decel, mu_max_tyre_track=mu_max_tyre_track, 
+                       optimal_slip_ratio_tyre_track) *
+  (1-f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, 
+                        v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)) +
+  f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, 
+                     rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)}
 
 #' The total longitudinal slip during a constant speed maneuver is calculated as:
 f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)
