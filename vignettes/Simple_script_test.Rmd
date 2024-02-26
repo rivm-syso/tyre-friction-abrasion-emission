@@ -281,18 +281,13 @@ test_accel_long_slip <-
 ```
 
 ```{r f_decel_long_slip}
-
-(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, 
-                               rho_air, v_start_decel, v_end_decel, v_wind, 
-                               alpha_slope, c_max_brake)
-
 test_decel_long_slip <- 
   f_decel_long_slip(c_roll = c_roll_uniform, 
                     m_vehicle = Vehicle_data$`Mass (kg)`[1], 
                     grav_constant = Constants |> 
                       filter(Name == "grav_constant") |> pull(value), 
-                    #c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
-                    #A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                    c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
+                    A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
                     rho_air = Constants |> 
                       filter(Name == "rho_air") |> pull(value),
                     v_start_decel = Maneuver_data$`Start speed (m/s)`[1], 
@@ -312,7 +307,18 @@ test_decel_long_slip <-
                     wet_mu_max_ref_tyre = Constants |>
                      filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
                     x_correct_mu_max_track = x_correct_mu_max_track_uniform,
-                    c_max_brake = ) # for wet to dry asphalt
+                    c_brake_ref_tyre_wet = Constants |> 
+                      filter(Name == "c_brake_ref_tyre_wet") |> pull(value)
+                    ) # for wet to dry asphalt
+
+
+```
+
+```{r f_const_speed_long_slip}
+
+```
+
+```{r f_lat_slip}
 
 ```
 
