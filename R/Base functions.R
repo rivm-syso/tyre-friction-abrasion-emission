@@ -27,7 +27,7 @@ source("R/Tyrelabel_conversion.R")
 #'@param x_correct_mu_max_track A correction factor for the maximum friction coefficient across different undergrounds
 #'
 ## Landscape parameters
-#'@param rho_air Density of air (km/m^3)
+#'@param rho_air Density of air (kg/m^3)
 #'@param v_wind Wind velocity (m/s)
 #
 ## General physics parameters
@@ -486,13 +486,16 @@ f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehic
                          v_start_accel=v_start_accel, v_end_accel=v_end_accel, 
                          v_wind=v_wind, alpha_slope=alpha_slope, m_rotate=m_rotate, 
                          c_accel=c_accel, optimal_slip_ratio_tyre_track=optimal_slip_ratio_tyre_track)
+  
 }
 
 
 
 #' The total longitudinal slip during a constant speed maneuver is calculated as:
-f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, 
-                                     A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope){
+f_const_speed_long_slip <- function (c_roll, m_vehicle, m_rotate, grav_constant, c_drag, 
+                                     A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope,
+                                     wet_mu_max_ref_tyre, optimal_slip_ratio_tyre_track,
+                                     grip_index_tyre, c_brake_ref_tyre_wet, x_correct_mu_max_track){
   
   const_speed_long_force = f_const_speed_long_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind, 
                                                     c_roll, m_vehicle, grav_constant, alpha_slope)
@@ -502,15 +505,23 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag,
   #' the total longitudinal force divided by the normal longitudinal load force.
   constant_speed_long_mu_slip = const_speed_long_force / long_normal_load_force
   
+  mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre=grip_index_tyre, 
+                                          wet_mu_max_ref_tyre=wet_mu_max_ref_tyre, 
+                                          x_correct_mu_max_track=x_correct_mu_max_track)
   #' The wheelspin slip at constant driving is then calculated as the ratio of the friction coefficient 
   #' to the peak friction coefficient multiplied by the optimal slip ratio.
-  constant_speed_wheelspin_slip = (constant_speed_long_mu_slip /mu_max_tyre_track) * optimal_slip_ratio_tyre_track
+  constant_speed_wheelspin_slip = (constant_speed_long_mu_slip / mu_max_tyre_track) * optimal_slip_ratio_tyre_track
   
+  
+  c_max_brake = f_c_max_brake(grip_index_tyre=grip_index_tyre, # Grip index, derived from tyre label
+                              c_brake_ref_tyre_wet=c_brake_ref_tyre_wet, # ref testing break decelaration (0.68 g)
+                              x_correct_road=x_correct_mu_max_track, # correction for calculating dry situation from wet test
+                              grav_constant=grav_constant)
   
   #' Brake slip at constant speed driving is calculated as 
   #' the brake force needed to remain under the speed limit divided by the maximum brake force.
-  
   max_brake_force = (m_vehicle+m_rotate)*c_max_brake
+  
   const_speed_brake_force = f_const_speed_brake_force(m_vehicle=m_vehicle, 
                                                       grav_constant=grav_constant, 
                                                       alpha_slope=alpha_slope, 
@@ -527,17 +538,6 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag,
 
 
 #'@section Latitudinal friction force functions
-#'
-#'@section Centripetal force at corners
-
-f_centripet_force <- function(m_vehicle , v_vehicle , r_corner)
-{m_vehicle*(v_vehicle^2)/r_corner}
-
-#'@section Bank slope force 
-#'Bank slope force slope is positive if the high side of the bank is on the outside of the corner. 
-
-f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
-{grav_constant*sin(alpha_bank_slope*pi/180)*m_vehicle}
 
 #'@section Resultant latitudinal force
 #'Then bank slope force works in opposite direction to the centripetal force, 
@@ -549,27 +549,61 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
 #'Therefore, the rules above are included in the routine as ((centripet_force - bank_force)^2)^0.5
 
 f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope){
-  (f_centripet_force(m_vehicle , v_vehicle , r_corner) - 
-     f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )} 
+  
+  #'Centripetal force at corners
+  if(r_corner == 0 | is.na(r_corner)) { centripet_force = 0 } else {
+    centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*cos(alpha_bank_slope*pi/180)
+  }
+  #'Bank slope force slope is positive if the high side of the bank is on the outside of the corner. 
+  
+  bank_force = grav_constant*sin(alpha_bank_slope*pi/180)*m_vehicle
+  
+  return(abs(centripet_force - bank_force))
+} 
 
 #' @section Latitudinal slip
 
 #' The normal load force is calculated as the cosinus of the bank slope degree multiplied with vehicle weight.
-f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant)
-{cos(alpha_bank_slope * pi/180)*(m_vehicle*grav_constant)}
+f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant, r_corner, v_vehicle){
+  #'Centripetal force at corners
+  if(r_corner == 0 | is.na(r_corner)) { n_centripet_force = 0 } else {
+    n_centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*sin(alpha_bank_slope*pi/180)
+  }
+  n_bank_force = cos(alpha_bank_slope * pi/180)*(m_vehicle*grav_constant)
+  
+  return(abs(n_centripet_force) + abs(n_bank_force))
+}
 
-#'The latitudinal friction coefficient is calculated by dividing the resultant latitudinal forces 
-#' with the normal load force perpendicular to the latitudinal forces
 
-f_lat_mu_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-{f_lat_force(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)* 
-    1/(f_lat_normal_load_force(alpha_bank_slope,m_vehicle, grav_constant))}
 
 #' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
 
-f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope, mu_max_tyre_track, optimal_slip_track)
-{f_lat_mu_slip(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)*
-    (1/mu_max_tyre_track)*optimal_slip_track}
+f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, 
+                        alpha_bank_slope, optimal_slip_ratio_tyre_track,
+                        grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track){
+  #' The normal load force is calculated as the cosinus of the bank slope degree multiplied with vehicle weight.
+  #' 
+  # browser()
+  lat_normal_load_force = f_lat_normal_load_force(alpha_bank_slope=alpha_bank_slope,
+                                                  m_vehicle=m_vehicle, 
+                                                  grav_constant=grav_constant, 
+                                                  r_corner=r_corner, 
+                                                  v_vehicle=v_vehicle)
+  lat_force = f_lat_force(m_vehicle=m_vehicle , 
+                          v_vehicle=v_vehicle , 
+                          r_corner=r_corner, 
+                          grav_constant=grav_constant, 
+                          alpha_bank_slope=alpha_bank_slope)
+  #'The latitudinal friction coefficient is calculated by dividing the resultant latitudinal forces 
+  #' with the normal load force perpendicular to the latitudinal forces
+  lat_mu_slip = lat_force/lat_normal_load_force
+  
+  mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre=grip_index_tyre, 
+                                          wet_mu_max_ref_tyre=wet_mu_max_ref_tyre, 
+                                          x_correct_mu_max_track=x_correct_mu_max_track)
+  
+  (lat_mu_slip/mu_max_tyre_track)*optimal_slip_ratio_tyre_track
+}
 
 #' @section Distance and time functions ####
 #' Distance and time functions are used to calculate the distances and times over which driving maneuvers 
