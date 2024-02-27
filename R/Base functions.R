@@ -140,7 +140,7 @@ f_decel_long_force <- function (m_vehicle, c_roll, grav_constant, rho_air, v_sta
 #'the uphill slope force
 #'or if necessary an additional brake force the driver needs to remain under a speed limit at steep downhill driving.
 
-f_const_speed_long_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
+f_const_speed_long_force<- function (c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
 {f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
   + f_roll_force(c_roll, m_vehicle, grav_constant)
   + pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope))
@@ -209,8 +209,8 @@ f_constant_speed_wheelspin_slip <- function(c_roll, m_vehicle, grav_constant, c_
 #' the total longitudinal force divided by the normal longitudinal load force.
 
 f_decel_long_mu_slip <- function(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel)
-{f_decel_long_force(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel)
-  *(1/f_long_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
+{f_decel_long_force(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel)*
+    (1/f_long_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
 
 #' The wheelspin slip at deceleration is then calculated as the ratio of the friction coefficient 
 #' to the peak friction coefficient multiplied by the optimal slip ratio.
