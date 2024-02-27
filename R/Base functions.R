@@ -303,7 +303,7 @@ f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant)
 
 f_lat_mu_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
 {f_lat_force(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)* 
-    1/(f_lat_normal_load_force(alpha_bank_slope,m_vehicle, grav_constant))}
+    1/(f_lat_normal_load_force(alpha_bank_slope,m_vehicle, grav_constant)+(sin(alpha_bank_slope)*m_vehicle*(v_vehicle^2)/r_corner))}
 
 #' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
 
@@ -336,7 +336,7 @@ f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
 #'@section Deceleration distance in m:
 
 f_decel_distance <- function(v_start, v_end, c_decel )
-{v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_ecel_time(v_start, v_end, c_decel)^2}
+{v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_decel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
 f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_corner*pi)}
