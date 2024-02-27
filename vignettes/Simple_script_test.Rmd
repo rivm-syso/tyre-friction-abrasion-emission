@@ -7,6 +7,8 @@ editor_options:
 
 *Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.*
 
+# Base Function testing
+
 *The script is taken from IDIADA_motorway_viii.R.*
 
 ```{r data}
@@ -398,10 +400,7 @@ f_corner_distance(r_corner = Sector_data$`Corner radius (m)`[2],
 
 ```
 
-
 # friction force calculation
-
-
 
 Slip \* Distance \* Force
 
