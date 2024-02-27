@@ -5,9 +5,11 @@ editor_options:
   chunk_output_type: console
 ---
 
-Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.
+*Goal is to replicate the scripting and use maneuvre functions and data instead. The newly updated [Base functions.R]{.underline} file is used.*
 
-The script is taken from IDIADA_motorway_viii.R.
+# Base Function testing
+
+*The script is taken from IDIADA_motorway_viii.R.*
 
 ```{r data}
 library(tidyverse)
@@ -65,11 +67,14 @@ source("R/Base functions.R")
 #   x_correct_road = runif(n = 1000, 1.07, 1.47)
 # }
 
+### 
+# all data is stored in an xlsx file:
 
-n.Runs = 1000
-local_path <- "C:/Users/quikj/rivm.nl/LEON-Tyres - WP3 Microplastics/Data/TWP emission data_IDIADA_v01.xlsx"
-
+# local_path <- "C:/Users/quikj/rivm.nl/LEON-Tyres - WP3 Microplastics/Data/TWP emission data_IDIADA_v01.xlsx"
 local_path <- "data/TWP emission data_IDIADA_v01.xlsx"
+
+n.Runs = 1000 # for clearly uncertrain variables, amount of values to use
+
 Maneuver_data <- readxl::read_excel(path = local_path, sheet = "Maneuver data")
 Sector_data <- readxl::read_excel(path = local_path, sheet = "Sector data")
 Vehicle_data <- readxl::read_excel(path = local_path, sheet = "Vehicle data")
@@ -99,17 +104,17 @@ c_roll_uniform <- runif(n.Runs,
 
 ```
 
-The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.
+*The basic approach to calculating friction force is estimating the distance a maneuvre is taking place, the slip and forces.*
 
-The forces are calculated using these functions:
+*The forces are calculated using these functions:*
 
--   f_accel_long_force
+-   *f_accel_long_force*
 
--   f_decel_long_force
+-   *f_decel_long_force*
 
--   f_const_speed_long_force
+-   *f_const_speed_long_force*
 
--   f_lat_force
+-   *f_lat_force*
 
 ```{r f_accel_long_force}
 
@@ -118,23 +123,23 @@ The forces are calculated using these functions:
 #TODO: selection based on track, maneuver code, tyre and verhicle
 
 test_accel_Force <- f_accel_long_force(c_roll = c_roll_uniform, 
-                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
-                   grav_constant = Constants |> 
-                     filter(Name == "grav_constant") |> pull(value),
-                   c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
-                   A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
-                   rho_air = Constants |> 
-                     filter(Name == "rho_air") |> pull(value), 
-                   v_start_accel = Maneuver_data$`Start speed (m/s)`[1], 
-                   v_end_accel = Maneuver_data$`End speed (m/s)`[1], 
-                   v_wind = 0, # uniform distribution of variability? 
-                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
-                   m_rotate = runif(n.Runs,
-                                    Constants |> 
-                     filter(Name == "min_rotating_fraction") |> pull(value),
-                     Constants |> 
-                     filter(Name == "max_rotating_fraction") |> pull(value)), 
-                   c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[1])
+                                       m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                                       grav_constant = Constants |> 
+                                         filter(Name == "grav_constant") |> pull(value),
+                                       c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                                       A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                                       rho_air = Constants |> 
+                                         filter(Name == "rho_air") |> pull(value), 
+                                       v_start_accel = Maneuver_data$`Start speed (m/s)`[1], 
+                                       v_end_accel = Maneuver_data$`End speed (m/s)`[1], 
+                                       v_wind = Sector_data$`v_wind`[1], # uniform distribution of variability? 
+                                       alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi, 
+                                       m_rotate = runif(n.Runs,
+                                                        Constants |> 
+                                                          filter(Name == "min_rotating_fraction") |> pull(value),
+                                                        Constants |> 
+                                                          filter(Name == "max_rotating_fraction") |> pull(value)), 
+                                       c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[1])
 
 
 ```
@@ -143,17 +148,17 @@ test_accel_Force <- f_accel_long_force(c_roll = c_roll_uniform,
 
 
 test_const_Force <- f_const_speed_long_force(c_roll = c_roll_uniform, 
-                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
-                   grav_constant = Constants |> 
-                     filter(Name == "grav_constant") |> pull(value),
-                  c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
-                  A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
-                   rho_air = Constants |> 
-                     filter(Name == "rho_air") |> pull(value), 
-                   v_vehicle = Maneuver_data$`Start speed (m/s)`[1], 
-                   # v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
-                   v_wind = 0, # uniform distribution of variability? 
-                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1])
+                                             m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                                             grav_constant = Constants |> 
+                                               filter(Name == "grav_constant") |> pull(value),
+                                             c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                                             A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
+                                             rho_air = Constants |> 
+                                               filter(Name == "rho_air") |> pull(value), 
+                                             v_vehicle = Maneuver_data$`Start speed (m/s)`[1], 
+                                             # v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
+                                             v_wind = Sector_data$`v_wind`[1], # uniform distribution of variability? 
+                                             alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi)
 
 
 ```
@@ -162,23 +167,23 @@ test_const_Force <- f_const_speed_long_force(c_roll = c_roll_uniform,
 
 
 test_decel_Force <- f_decel_long_force(c_roll = c_roll_uniform, 
-                   m_vehicle = Vehicle_data$`Mass (kg)`[1],
-                   grav_constant = Constants |> 
-                     filter(Name == "grav_constant") |> pull(value),
-                  c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
-                  A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
-                   rho_air = Constants |> 
-                     filter(Name == "rho_air") |> pull(value), 
-                   v_start_decel = Maneuver_data$`Start speed (m/s)`[1], 
-                   v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
-                   v_wind = 0, # uniform distribution of variability? 
-                   alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
-                   m_rotate = runif(n.Runs,
-                                  Constants |>
-                   filter(Name == "min_rotating_fraction") |> pull(value),
-                   Constants |>
-                   filter(Name == "max_rotating_fraction") |> pull(value)),
-                   c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`)
+                                       m_vehicle = Vehicle_data$`Mass (kg)`[1],
+                                       grav_constant = Constants |> 
+                                         filter(Name == "grav_constant") |> pull(value),
+                                       c_drag = Vehicle_data$`Aero_drag_coef (-)`[1],
+                                       A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
+                                       rho_air = Constants |> 
+                                         filter(Name == "rho_air") |> pull(value), 
+                                       v_start_decel = Maneuver_data$`Start speed (m/s)`[1], 
+                                       v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
+                                       v_wind = 0, # uniform distribution of variability? 
+                                       alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi, 
+                                       m_rotate = runif(n.Runs,
+                                                        Constants |>
+                                                          filter(Name == "min_rotating_fraction") |> pull(value),
+                                                        Constants |>
+                                                          filter(Name == "max_rotating_fraction") |> pull(value)),
+                                       c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`)
 
 
 ```
@@ -190,28 +195,37 @@ test_decel_Force <- f_decel_long_force(c_roll = c_roll_uniform,
 ttest_lat_force <- f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
                                 grav_constant = Constants |> 
                                   filter(Name == "grav_constant") |> pull(value),
-                                r_corner = Sector_data$`Corner radius (m)`[1],
-                                alpha_bank_slope= Sector_data$`Latitudinal slope (%)`[1],
+                                r_corner = Sector_data$`Corner radius (m)`[2],
+                                alpha_bank_slope = atan(Sector_data$`Latitudinal slope (%)`[1]/100)*180/pi,
                                 # rho_air = Constants |> 
                                 #   filter(Name == "rho_air") |> pull(value), 
-                                v_vehicle = Maneuver_data$`Start speed (m/s)`[1] # average of start and end?
-)
+                                v_vehicle = Maneuver_data$`Start speed (m/s)`[2]) # average of start and end?
+
+f_lat_force( m_vehicle = Vehicle_data$`Mass (kg)`[1],
+             grav_constant = Constants |> 
+               filter(Name == "grav_constant") |> pull(value),
+             r_corner = Sector_data$`Corner radius (m)`[1],
+             alpha_bank_slope = atan(Sector_data$`Latitudinal slope (%)`[1]/100)*180/pi,
+             # rho_air = Constants |> 
+             #   filter(Name == "rho_air") |> pull(value), 
+             v_vehicle = Maneuver_data$`Start speed (m/s)`[1]) 
 
 ```
 
-Slip is calculated using:
+*Slip is calculated using:*
 
--   f_accel_long_slip
+-   *f_accel_long_slip*
 
--   f_decel_long_slip
+-   *f_decel_long_slip*
 
--   f_const_speed_long_slip
+-   *f_const_speed_long_slip*
 
--   f_lat_slip
+-   *f_lat_slip*
 
 ```{r f_accel_long_slip}
 
-grip_index_tyre_unform <- 
+### Data prep ###
+grip_index_tyre_uniform <- 
   runif(n.Runs, 
         min = fGripIndex_Tlabel(
           Label_wetgrip = Tyre_data$`Wet grip class`[1], # selection based on TYRE
@@ -225,28 +239,28 @@ grip_index_tyre_unform <-
 
 # based on sectory underground data select x_correct_mu_max_track
 switch(Sector_data$Underground[1], # SECTOR data
-        "Wet asphalt" = {
-          x_correct_mu_max_track_uniform = 1
-          optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
-                                       filter(Name == "optimal_slip_wet_min") |> 
-                                       pull(value),
-                    max =  Constants |> 
-                                       filter(Name == "optimal_slip_wet_max") |> 
-                                       pull(value))
-        },
-        "Dry asphalt" = {x_correct_mu_max_track_uniform = runif(n.Runs,min =  Constants |> 
-                                       filter(Name == "x_correct_mu_max_wet2dry_min") |> 
-                                       pull(value),
-                    max =  Constants |> 
-                                       filter(Name == "x_correct_mu_max_wet2dry_max") |> 
-                                       pull(value))
-                  optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
-                                       filter(Name == "optimal_slip_dry_min") |> 
-                                       pull(value),
-                    max =  Constants |> 
-                                       filter(Name == "optimal_slip_dry_max") |> 
-                                       pull(value))})
-
+       "Wet asphalt" = {
+         x_correct_mu_max_track_uniform = 1
+         optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                    filter(Name == "optimal_slip_wet_min") |> 
+                                                    pull(value),
+                                                  max =  Constants |> 
+                                                    filter(Name == "optimal_slip_wet_max") |> 
+                                                    pull(value))
+       },
+       "Dry asphalt" = {x_correct_mu_max_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                                 filter(Name == "x_correct_mu_max_wet2dry_min") |> 
+                                                                 pull(value),
+                                                               max =  Constants |> 
+                                                                 filter(Name == "x_correct_mu_max_wet2dry_max") |> 
+                                                                 pull(value))
+       optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                  filter(Name == "optimal_slip_dry_min") |> 
+                                                  pull(value),
+                                                max =  Constants |> 
+                                                  filter(Name == "optimal_slip_dry_max") |> 
+                                                  pull(value))})
+### end data prep ###
 
 test_accel_long_slip <- 
   f_accel_long_slip(c_roll = c_roll_uniform, 
@@ -260,7 +274,7 @@ test_accel_long_slip <-
                     v_start_accel = Maneuver_data$`Start speed (m/s)`[1], 
                     v_end_accel = Maneuver_data$`End speed (m/s)`[1], 
                     v_wind = 0, # uniform distribution of variability?  
-                    alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
+                    alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi, 
                     m_rotate = runif(n.Runs,
                                      Constants |> 
                                        filter(Name == "min_rotating_fraction") |> 
@@ -270,35 +284,30 @@ test_accel_long_slip <-
                                        pull(value)), 
                     c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[1], 
                     optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_uniform,
-                    grip_index_tyre = grip_index_tyre_unform, 
+                    grip_index_tyre = grip_index_tyre_uniform, 
                     wet_mu_max_ref_tyre = Constants |> 
                       filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
                     x_correct_mu_max_track = x_correct_mu_max_track_uniform) # for wet to dry asphalt
-  
-                      
+
+
 
 
 ```
 
 ```{r f_decel_long_slip}
-
-(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, 
-                               rho_air, v_start_decel, v_end_decel, v_wind, 
-                               alpha_slope, c_max_brake)
-
 test_decel_long_slip <- 
   f_decel_long_slip(c_roll = c_roll_uniform, 
                     m_vehicle = Vehicle_data$`Mass (kg)`[1], 
                     grav_constant = Constants |> 
                       filter(Name == "grav_constant") |> pull(value), 
-                    #c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
-                    #A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                    c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
+                    A_vehicle = Vehicle_data$`Surface_Area (m2)`[1],
                     rho_air = Constants |> 
                       filter(Name == "rho_air") |> pull(value),
                     v_start_decel = Maneuver_data$`Start speed (m/s)`[1], 
                     v_end_decel = Maneuver_data$`End speed (m/s)`[1], 
-                    v_wind = 0, # uniform distribution of variability?  
-                    alpha_slope = Sector_data$`Longitudinal slope (%)`[1], 
+                    v_wind = Sector_data$`v_wind`[1], # uniform distribution of variability?  
+                    alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi, 
                     m_rotate = runif(n.Runs,
                                      Constants |> 
                                        filter(Name == "min_rotating_fraction") |> 
@@ -308,21 +317,94 @@ test_decel_long_slip <-
                                        pull(value)), 
                     c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`[1], 
                     optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_uniform,
-                    grip_index_tyre = grip_index_tyre_unform,
+                    grip_index_tyre = grip_index_tyre_uniform,
                     wet_mu_max_ref_tyre = Constants |>
-                     filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
+                      filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
                     x_correct_mu_max_track = x_correct_mu_max_track_uniform,
-                    c_max_brake = ) # for wet to dry asphalt
+                    c_brake_ref_tyre_wet = Constants |> 
+                      filter(Name == "c_brake_ref_tyre_wet") |> pull(value)
+  ) # for wet to dry asphalt
+
 
 ```
 
-The distance is calculated using:
+```{r f_const_speed_long_slip}
+const_speed_long_slip <-
+  f_const_speed_long_slip(c_roll = c_roll_uniform, 
+                          m_vehicle = Vehicle_data$`Mass (kg)`[1], 
+                          m_rotate = runif(n.Runs,
+                                           Constants |> 
+                                             filter(Name == "min_rotating_fraction") |> 
+                                             pull(value),
+                                           Constants |> 
+                                             filter(Name == "max_rotating_fraction") |> 
+                                             pull(value)),
+                          grav_constant = Constants |> 
+                            filter(Name == "grav_constant") |> pull(value), 
+                          c_drag = Vehicle_data$`Aero_drag_coef (-)`[1], 
+                          A_vehicle = Vehicle_data$`Surface_Area (m2)`[1], 
+                          rho_air = Constants |> 
+                            filter(Name == "rho_air") |> pull(value), 
+                          v_vehicle = mean(Maneuver_data$`End speed (m/s)`[1],Maneuver_data$`End speed (m/s)`[1]), 
+                          v_wind = Sector_data$`v_wind`[1], # uniform distribution of variability? , 
+                          alpha_slope = atan(Sector_data$`Longitudinal slope (%)`[1]/100)*180/pi,
+                          wet_mu_max_ref_tyre = Constants |> 
+                            filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
+                          optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_uniform,
+                          grip_index_tyre = grip_index_tyre_uniform, 
+                          c_brake_ref_tyre_wet = Constants |> 
+                            filter(Name == "c_brake_ref_tyre_wet") |> pull(value), 
+                          x_correct_mu_max_track = x_correct_mu_max_track_uniform)
 
--   f_accel_distance
+```
 
--   f_decel_distance
+```{r f_lat_slip}
+lat_slip <- 
+  f_lat_slip(m_vehicle = Vehicle_data$`Mass (kg)`[1] , 
+             v_vehicle = mean(Maneuver_data$`End speed (m/s)`[1],
+                              Maneuver_data$`End speed (m/s)`[1]), 
+             r_corner = Sector_data$`Corner radius (m)`[1], 
+             grav_constant = Constants |> 
+               filter(Name == "grav_constant") |> pull(value),
+             alpha_bank_slope = atan(Sector_data$`Latitudinal slope (%)`[1]/100)*180/pi, 
+             optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_uniform,
+             
+             grip_index_tyre = grip_index_tyre_uniform, 
+             wet_mu_max_ref_tyre = Constants |> 
+               filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
+             x_correct_mu_max_track = x_correct_mu_max_track_uniform)
 
--   f_corner_distance
+
+```
+
+*The distance is calculated using:*
+
+-   *f_accel_distance*
+
+-   *f_decel_distance*
+
+-   *f_corner_distance*
+
+```{r f_accel_distance}
+
+f_accel_distance(v_start = Maneuver_data$`Start speed (m/s)`[2],
+                 v_end = Maneuver_data$`End speed (m/s)`[2],
+                 c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[2])
+
+f_decel_distance(v_start = Maneuver_data$`Start speed (m/s)`[1],
+                 v_end = Maneuver_data$`End speed (m/s)`[1],
+                 c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`[1])
+
+f_corner_distance(r_corner = Sector_data$`Corner radius (m)`[2],
+                  corner_angle = Sector_data$`Corner angle (degrees)`[2])
+
+```
+
+# friction force calculation
+
+Slip \* Distance \* Force
+
+# *Previous analysis jan 2024*
 
 ```{r normal_load_force}
 ## Setup vehicle parameters for track friction simulations
@@ -331,11 +413,11 @@ The distance is calculated using:
 normal_load_force <- f_normal_load_force(m_vehicle=m_vehicle, grav_constant)
 ```
 
-The new base functions now include slope in calculation of `normal_load_force`.
+*The new base functions now include slope in calculation of `normal_load_force`.*
 
-1.  But where is this normal_load_force used?
+1.  *But where is this normal_load_force used?*
 
-2.  Also, define variables, as you can see errors occur with just mentioning them with incorrect order...
+2.  *Also, define variables, as you can see errors occur with just mentioning them with incorrect order...*
 
 ```{r c_accel_max}
 ### Vehicle maximum acceleration constant (m.s^-2)
@@ -343,7 +425,7 @@ The new base functions now include slope in calculation of `normal_load_force`.
 c_accel_max <-f_c_accel_max(t_0_100kmh_vehicle)
 ```
 
-1.  Where is `c_accel_max` used? It is used when the acceleration rate is not known and needs to be estimated based on vehicle specifications, such as time to 100 kph.
+1.  *Where is `c_accel_max` used? It is used when the acceleration rate is not known and needs to be estimated based on vehicle specifications, such as time to 100 kph.*
 
 ```{r m_rotate}
 ### mass (kg) of rotating parts
@@ -351,7 +433,7 @@ m_rotate = f_m_rotate(frac_mass_rotate_parts_vehicle=frac_mass_rotate_parts_vehi
                       m_vehicle=m_vehicle)
 ```
 
-m_rotate is uncertain and is typically between 13 and 15 percent of the vehicle weight (REF needed).
+*m_rotate is uncertain and is typically between 13 and 15 percent of the vehicle weight (REF needed).*
 
 ```{r f_mu_max}
 #### calculate peak friction coefficient between tyre and track
@@ -360,7 +442,7 @@ mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre=grip_index_tyre,
                                         wet_mu_max_ref_tyre=mu_max_ref_tyre_wet)
 ```
 
-The peak friction coefficient is calculated using an uncertain conversion of tyre label to grip index and wet grip index to dry grip index to calculate the peak friction coefficient between the tyre and the track.
+*The peak friction coefficient is calculated using an uncertain conversion of tyre label to grip index and wet grip index to dry grip index to calculate the peak friction coefficient between the tyre and the track.*
 
 ```{r}
 #### calculate linear increase constant 'x' for track
@@ -372,6 +454,6 @@ x_slip_long_force_tyre_track <- f_x_slip_long_force(grip_index_tyre,
 
 ```
 
-The is quite a departure here in Base function in how slip linearity here is used. There are now seperate functions per maneuvre.
+*The is quite a departure here in Base function in how slip linearity here is used. There are now seperate functions per maneuvre.*
 
-1.  How is with deceleration accounted for when it is just wheel slip and when breaking slip?splayed.
+1.  *How is with deceleration accounted for when it is just wheel slip and when breaking slip?splayed.*
