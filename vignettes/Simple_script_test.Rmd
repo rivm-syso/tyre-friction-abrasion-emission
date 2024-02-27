@@ -383,6 +383,26 @@ lat_slip <-
 
 -   *f_corner_distance*
 
+```{r f_accel_distance}
+
+f_accel_distance(v_start = Maneuver_data$`Start speed (m/s)`[2],
+                 v_end = Maneuver_data$`End speed (m/s)`[2],
+                 c_accel = Maneuver_data$`Acceleration constant (m.s^-2)`[2])
+
+f_decel_distance(v_start = Maneuver_data$`Start speed (m/s)`[1],
+                 v_end = Maneuver_data$`End speed (m/s)`[1],
+                 c_decel = Maneuver_data$`Deceleration constant (m.s^-2)`[1])
+
+f_corner_distance(r_corner = Sector_data$`Corner radius (m)`[2],
+                  corner_angle = Sector_data$`Corner angle (degrees)`[2])
+
+```
+
+
+# friction force calculation
+
+
+
 Slip \* Distance \* Force
 
 # *Previous analysis jan 2024*
