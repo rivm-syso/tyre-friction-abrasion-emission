@@ -187,7 +187,7 @@ f_accel_long_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_veh
 #' The wheelspin slip during acceleration can then calculated as the ratio of the friction coefficient to the peak friction coefficient multiplied by the optimal slip ratio.
 
 f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                                    v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)
+                                    v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
 {f_accel_long_mu_slip (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*
     (1/mu_max_tyre_track)*optimal_slip_ratio_tyre_track} 
 
