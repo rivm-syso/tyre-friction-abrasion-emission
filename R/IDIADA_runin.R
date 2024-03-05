@@ -27,14 +27,13 @@ grip_index_tyre_max = 1.56
 # indicate track underground as "dry asphalt" or "wet asphalt"
 track_underground = "dry_asphalt"
 
-
 #### setup tyre grip performance simulation
 grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
 #### peak friction coefficient of reference tyre under reference conditions in EU wet grip tests
 mu_max_ref_tyre_wet = 0.85
 
 # Source tyre friction funtions
-source("R/tyre_wear_functions20230614.R")
+source("R/Base functions.R")
 
 ## Setup vehicle parameters for track friction simulations
 
