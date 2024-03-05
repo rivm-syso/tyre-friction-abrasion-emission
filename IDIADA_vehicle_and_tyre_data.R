@@ -48,6 +48,7 @@ c_full_brake_ref_tyre_wet = 0.68*grav_constant
 grip_index_tyre = runif(n=1000, min=grip_index_tyre_min, max=grip_index_tyre_max)
 c_max_brake = (grip_index_tyre * c_full_brake_ref_tyre_wet) / 1.25
 
+
 if (track_underground == "dry_asphalt") 
 {  optimal_slip_track = runif(n = 1000, 0.15, 20)}
 
