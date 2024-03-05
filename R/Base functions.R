@@ -325,7 +325,7 @@ f_accel_time<-function(v_start,v_end,c_accel){-(v_start-v_end)/c_accel}
 #' The acceleration distance is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
 
 f_accel_distance <- function(v_start , v_end , c_accel ) 
-{v_start*f_acceltime(v_start,v_end,c_accel)
+{v_start*f_accel_time(v_start,v_end,c_accel)
   +1/2*c_accel*f_accel_time(v_start,v_end,c_accel)^2}
 
 #'@section Deceleration time in s:
