@@ -267,7 +267,7 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A
 #'
 #'@section Centripetal force at corners
 
-f_centripet_force <- function(m_vehicle , v_vehicle , r_corner)
+f_centripet_force <- function(m_vehicle , v_vehicle , r_corner, alpha_bank_slope)
   {cos(alpha_bank_slope)*m_vehicle*(v_vehicle^2)/r_corner}
 
 #'@section Bank slope force 
@@ -286,7 +286,7 @@ f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
 #'Therefore, the rules above are included in the routine as ((centripet_force - bank_force)^2)^0.5
 
 f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-  {((f_centripet_force(m_vehicle , v_vehicle , r_corner) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
+  {((f_centripet_force(m_vehicle , v_vehicle , r_corner, alpha_bank_slope) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
 
 #' @section Latitudinal slip
 
@@ -303,9 +303,9 @@ f_lat_mu_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alph
 
 #' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
 
-f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope, mu_max_tyre_track, optimal_slip_track)
+f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope, mu_max_tyre_track, optimal_slip_ratio_track)
 {f_lat_mu_slip(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)*
-    (1/mu_max_tyre_track)*optimal_slip_track}
+    (1/mu_max_tyre_track)*optimal_slip_ratio_track}
 
 #' @section Distance and time functions ####
 #' Distance and time functions are used to calculate the distances and times over which driving maneuvers 
