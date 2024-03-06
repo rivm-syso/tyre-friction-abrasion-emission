@@ -48,11 +48,22 @@ c_full_brake_ref_tyre_wet = 0.68*grav_constant
 grip_index_tyre = runif(n=1000, min=grip_index_tyre_min, max=grip_index_tyre_max)
 c_max_brake = (grip_index_tyre * c_full_brake_ref_tyre_wet) / 1.25
 
+f_wet_mu_max_tyre <-  function(grip_index_tyre, wet_mu_max_ref_tyre)
+{(grip_index_tyre * wet_mu_max_ref_tyre) / 1.25} 
+
+#' For other undergrounds then wet asphalt te peak friction coefficient can be using a correction factor.
+f_mu_max_tyre_track <- function (grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track)
+{f_wet_mu_max_tyre(grip_index_tyre, wet_mu_max_ref_tyre) * x_correct_mu_max_track}
+
+
+
+
 
 if (track_underground == "dry_asphalt") 
-{  optimal_slip_track = runif(n = 1000, 0.15, 20)}
+{  optimal_slip_ratio_track = runif(n = 1000, 0.15, 0.20)}
 
 if (track_underground == "dry_asphalt") 
 {  x_correct_track = runif(n = 1000, 1.07, 1.47)}
 
 c_roll = (runif(n=1000, min=c_roll_tyre_min, max=c_roll_tyre_max))/1000
+mu_max_tyre_track = f_mu_max_tyre_track(grip_index_tyre, wet_mu_max_ref_tyre, x_correct_mu_max_track = x_correct_track)

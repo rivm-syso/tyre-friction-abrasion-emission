@@ -80,8 +80,8 @@ c_accel= sector_accel_g*grav_constant
 ## Sector 1 straight sector simulations
 accel_distance_sector_1 = f_accel_distance(v_start=sector_start_velocity_kmh/3.6, v_end= sector_velocity_kmh/3.6 , c_accel)
 accel_long_force_sector_1 = f_accel_long_force(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start, v_end, v_wind, alpha_slope, m_rotate, c_accel)
-accel_long_slip_sector_1 = f_accel_long_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                                             v_start, v_end, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)
+accel_long_slip_sector_1 = f_accel_long_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel =sector_start_velocity_kmh/3.6, v_end_accel =sector_end_velocity_kmh/3.6, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
+
 
 
 IDIADA_accel_long_force_sector_1 = f_accel_long_force(c_drag, A_vehicle, rho_air, sector_start_velocity_kmh, sector_velocity_kmh, v_wind, c_roll, m_vehicle,

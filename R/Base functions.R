@@ -186,10 +186,8 @@ f_accel_long_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_veh
 
 #' The wheelspin slip during acceleration can then calculated as the ratio of the friction coefficient to the peak friction coefficient multiplied by the optimal slip ratio.
 
-f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                                    v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
-{f_accel_long_mu_slip (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*
-    (1/mu_max_tyre_track)*optimal_slip_ratio_tyre_track} 
+f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
+{(f_accel_long_mu_slip (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*(1/mu_max_tyre_track))*optimal_slip_ratio_track} 
 
 #' The friction coefficient at constant speed driving is calculated as
 #' the total longitudinal force divided by the normal longitudinal load force.
@@ -250,10 +248,8 @@ f_const_speed_brake_slip <- function(m_vehicle, grav_constant, alpha_slope, c_ro
 #'
 #' The total longitudinal slip during an acceleration maneuver is calculated as wheelspin only:
  
-f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                          v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)
-{f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
-                        v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, optimal_slip_ratio_track)}
+f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
+{f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)}
 
 #' The total longitudinal slip during a deceleration maneuver is calculated as:
 f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
