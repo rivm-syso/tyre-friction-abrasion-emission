@@ -252,9 +252,8 @@ f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehic
 {f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)}
 
 #' The total longitudinal slip during a deceleration maneuver is calculated as:
-f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)
-{f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel, mu_max_tyre_track, optimal_slip_ratio_track)*
-    (1-f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake))+
+f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope,mu_max_tyre_track, optimal_slip_ratio_track, c_max_brake)
+{f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel, mu_max_tyre_track, optimal_slip_ratio_track)*(1-f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake))+
        f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)}
 
 #' The total longitudinal slip during a constant speed maneuver is calculated as:
