@@ -1,39 +1,8 @@
 # Leon Tyre Test Track Simulations
 
-## Input vehicle specifications Ford Escape Kuga
-
-#Vehicle mass in kg
-m_vehicle= 1660
-#Vehicle surface area in m^2
-A_vehicle=2.629
-#Vehicle aerodynamic drag coefficient
-c_drag= 0.347
-#Vehicle acceleration from 0-100 km.h^-1 in s
-t_0_100kmh_vehicle= 9.2
-# Fraction of vehicle mass that consists of rotating parts (kg/kg)
-frac_mass_rotate_parts_vehicle = runif(n=1000, 0.13,0.15)
-
-## Input tyre performance data
-
-tyre_name ="Michelin"
-# minimum roll coefficient (kg/t) according to EU label
-c_roll_tyre_min = 9.1
-# maximum roll coefficient (kg/t) according to EU label
-c_roll_tyre_max = 10.5
-# minimum grip index according to EU label
-grip_index_tyre_min = 1.55
-# maximum grip index according to EU label
-grip_index_tyre_max = 1.56
-# indicate track underground as "dry asphalt" or "wet asphalt"
-track_underground = "dry_asphalt"
-
-#### setup tyre grip performance simulation
-grip_index_tyre = runif(n=1000,grip_index_tyre_min,grip_index_tyre_max)
-#### peak friction coefficient of reference tyre under reference conditions in EU wet grip tests
-mu_max_ref_tyre_wet = 0.85
-
-# Source tyre friction funtions
+# Source base functions for friction simulations
 source("R/Base functions.R")
+source("R/IDIADA_vehicle_and_tyre_data.R")
 
 ## Setup vehicle parameters for track friction simulations
 
