@@ -35,6 +35,9 @@ accel_lat_slip_sector_1 = f_lat_slip(m_vehicle , v_vehicle=mean(sector_start_vel
 accel_lat_friction_work_sector_1 = accel_distance_sector_1 * accel_lat_force_sector_1 * accel_lat_slip_sector_1
 
 decel_distance_sector_1 = f_decel_distance(v_start = sector_velocity_kmh/3.6, v_end = sector_end_velocity_kmh/3.6, c_decel)
+decel_long_force_sector_1 = f_decel_long_force(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel = sector_velocity_kmh/3.6, v_end_decel = sector_end_velocity_kmh/3.6, v_wind, alpha_slope, c_decel)
+decel_long_slip_sector_1 = f_decel_long_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel=sector_velocity_kmh/3.6, v_end_decel=sector_end_velocity_kmh/3.6, v_wind, alpha_slope,mu_max_tyre_track, optimal_slip_ratio_track, c_max_brake)
+
 
 
 IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
