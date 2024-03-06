@@ -332,7 +332,7 @@ f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
 #'@section Deceleration distance in m:
 
 f_decel_distance <- function(v_start, v_end, c_decel )
-{v_start*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_decel_time(v_start, v_end, c_decel)^2}
+{v_end*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_decel_time(v_start, v_end, c_decel)^2}
 
 #'@section Corner distance in m:
 f_corner_distance <- function(r_corner,corner_angle){(corner_angle/(360)*2*r_corner*pi)}
