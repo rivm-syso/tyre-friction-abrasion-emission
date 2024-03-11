@@ -93,7 +93,7 @@ f_decel_brake_force <- function(c_decel, m_vehicle, m_rotate, c_roll, grav_const
 
 f_const_speed_brake_force <- function (m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
 {pmax(0, -(f_roll_force(c_roll, m_vehicle, grav_constant)
-             + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle = mean(v_start_decel,v_end_decel), v_wind)
+             + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
              + f_slope_force(m_vehicle, grav_constant, alpha_slope)))}
 
 # For constant speed driving, the minimum brake force is also limited to zero.       
@@ -141,10 +141,12 @@ f_decel_long_force <- function (m_vehicle, c_roll, grav_constant, rho_air, v_sta
 #'or if necessary an additional brake force the driver needs to remain under a speed limit at steep downhill driving.
 
 f_const_speed_long_force<- function (c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
-{f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
-  + f_roll_force(c_roll, m_vehicle, grav_constant)
-  + pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope))
-  + f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
+{f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind) + 
+    f_roll_force(c_roll, m_vehicle, grav_constant) + 
+    pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope)) + 
+    f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
+  
+ # + f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
 
 #'@section Longitudinal slip functions
 #' Longitudinal slip is defined here as the difference between the actual forward vehicle velocity and 
