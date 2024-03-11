@@ -47,29 +47,30 @@ decel_lat_friction_work_sector_1 = decel_distance_sector_1 * decel_lat_force_sec
 const_speed_distance_sector_1 = sector_distance - accel_distance_sector_1 - decel_distance_sector_1
 const_speed_long_force_sector_1 = f_const_speed_long_force(c_drag, A_vehicle, rho_air, v_vehicle=sector_velocity_kmh/3.6, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
 const_speed_long_slip_sector_1 = f_const_speed_long_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle =sector_velocity_kmh/3.6, v_wind, alpha_slope)
+const_speed_long_friction_work_sector_1 = const_speed_distance_sector_1*const_speed_long_force_sector_1*const_speed_long_slip_sector_1
+const_speed_lat_force_sector_1 = f_lat_force(m_vehicle , v_vehicle =sector_velocity_kmh/3.6, r_corner = sector_corner_radius, grav_constant, alpha_bank_slope = sector_bank_slope)
+const_speed_lat_slip_sector_1 = f_lat_slip(m_vehicle , v_vehicle = sector_velocity_kmh/3.6, r_corner = sector_corner_radius, grav_constant, alpha_bank_slope = sector_bank_slope, mu_max_tyre_track, optimal_slip_ratio_track)
+const_speed_lat_friction_work_sector_1 = const_speed_distance_sector_1*const_speed_lat_force_sector_1*const_speed_lat_slip_sector_1
 
+#IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
+#IDIADA_decel_long_force_sector_1 = f_decel_long_force(c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope)
+#IDIADA_decel_slip_sector_1 = f_decel_brake_slip(c_decel, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant ,alpha_slope, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
+#IDIADA_decel_friction_work_sector_1 = f_decel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope, c_decel, m_rotate, grip_index_tyre, x_correct_road,c_full_brake_ref_tyre_wet)
 
-
-IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
-IDIADA_decel_long_force_sector_1 = f_decel_long_force(c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope)
-IDIADA_decel_slip_sector_1 = f_decel_brake_slip(c_decel, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant ,alpha_slope, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-IDIADA_decel_friction_work_sector_1 = f_decel_friction_work(optimal_slip, x_slip_long_force, c_drag, A_vehicle, rho_air, sector_velocity_kmh, sector_end_velocity_kmh , v_wind, c_roll, m_vehicle, grav_constant , alpha_slope, c_decel, m_rotate, grip_index_tyre, x_correct_road,c_full_brake_ref_tyre_wet)
-
-IDIADA_const_speed_distance_sector_1 = f_const_speed_distance(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel)
-IDIADA_const_speed_long_force_sector_1 = f_const_speed_long_force(c_drag,
-                                                                  A_vehicle,
-                                                                  rho_air,
-                                                                  sector_velocity_kmh,
-                                                                  v_wind ,
-                                                                  c_roll,
-                                                                  m_vehicle,
-                                                                  grav_constant ,
-                                                                  alpha_slope)
-IDIADA_const_speed_slip_sector_1 = f_const_speed_slip(m_vehicle, grav_constant, alpha_slope, c_drag, A_vehicle, rho_air, sector_velocity_kmh, v_wind,c_roll, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
-IDIADA_const_speed_friction_work_sector_1 = f_const_speed_friction_work(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel, c_drag, A_vehicle, rho_air, v_wind , c_roll, m_vehicle, grav_constant , alpha_slope, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
+#IDIADA_const_speed_distance_sector_1 = f_const_speed_distance(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel)
+#IDIADA_const_speed_long_force_sector_1 = f_const_speed_long_force(c_drag,
+                                                                 # A_vehicle,
+                                                                  ##sector_velocity_kmh,
+                                                                  #v_wind ,
+                                                                  #c_roll,
+                                                                  #m_vehicle,
+                                                                  #grav_constant ,
+                                                                  #alpha_slope)
+#IDIADA_const_speed_slip_sector_1 = f_const_speed_slip(m_vehicle, grav_constant, alpha_slope, c_drag, A_vehicle, rho_air, sector_velocity_kmh, v_wind,c_roll, m_rotate, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
+#IDIADA_const_speed_friction_work_sector_1 = f_const_speed_friction_work(sector_distance,sector_start_velocity_kmh, sector_velocity_kmh , c_accel, sector_end_velocity_kmh , c_decel, c_drag, A_vehicle, rho_air, v_wind , c_roll, m_vehicle, grav_constant , alpha_slope, grip_index_tyre, x_correct_road, c_full_brake_ref_tyre_wet)
 
 ## Sector 2 corner sector input
-sector_start_velocity_kmh = 80
+#sector_start_velocity_kmh = 80
 sector_end_velocity_kmh = 80
 sector_velocity_kmh = 80
 sector_alpha_slope = 0
