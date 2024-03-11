@@ -43,6 +43,9 @@ decel_lat_force_sector_1 = f_lat_force(m_vehicle , v_vehicle =mean(sector_veloci
 decel_lat_slip_sector_1 = f_lat_slip(m_vehicle , v_vehicle=mean(sector_velocity_kmh/3.6, sector_end_velocity_kmh/3.6) , r_corner = sector_corner_radius, grav_constant, alpha_bank_slope = sector_bank_slope, mu_max_tyre_track, optimal_slip_ratio_track)
 decel_lat_friction_work_sector_1 = decel_distance_sector_1 * decel_lat_force_sector_1 * decel_lat_slip_sector_1
 
+# constant speed sector 1
+const_speed_distance_sector_1 = sector_distance - accel_distance_sector_1 - decel_distance_sector_1
+const_speed_long_force_sector_1 = f_const_speed_long_force(c_drag, A_vehicle, rho_air, v_vehicle=sector_velocity_kmh/3.6, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
 
 
 IDIADA_decel_distance_sector_1 =f_decel_distance(sector_velocity_kmh, sector_end_velocity_kmh , c_decel)
