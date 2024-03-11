@@ -202,8 +202,8 @@ f_constant_speed_long_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_dr
 #' to the peak friction coefficient multiplied by the optimal slip ratio.
 
 f_constant_speed_wheelspin_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope, mu_max_tyre_track, optimal_slip_ratio_track)
-{f_constant_speed_long_mu_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)*
-    (1/mu_max_tyre_track)*optimal_slip_ratio_track}
+{f_constant_speed_long_mu_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope) * (1/mu_max_tyre_track) *optimal_slip_ratio_track} 
+
 
 #' The friction coefficient at deceleration is calculated as
 #' the total longitudinal force divided by the normal longitudinal load force.
@@ -260,7 +260,7 @@ f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_consta
 
 #' The total longitudinal slip during a constant speed maneuver is calculated as:
 f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)
-{f_constant_speed_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)*
+{f_constant_speed_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope, mu_max_tyre_track, optimal_slip_ratio_track)*
   (1-f_const_speed_brake_slip(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_max_brake))+
      f_const_speed_brake_slip(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_max_brake)}
 
