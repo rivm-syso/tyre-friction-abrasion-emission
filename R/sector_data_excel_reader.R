@@ -4,18 +4,24 @@ library(dplyr)
 
 ## Open Excel in R ##
 maneuver_data <- read_excel("R/exercise_excel_2.xlsx")
+maneuver_data <- data.frame(maneuver_data)
 
-## Select columns from sector_data ##
+maneuver_data$c_accel
+rowwise(maneuver_data)
+maneuver_data%>% mutate(min_long_force = min(f_accel_long_force(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel = Start.speed, v_end_accel=Top.speed, v_wind, alpha_slope, m_rotate, c_accel=c_accel)))
 
-v_start <- select(maneuver_data, c ('Start speed')) 
-v_end <- select (maneuver_data, c ('End speed'))
-v_top <- select (maneuver_data, c ('Top speed'))
-alpha_slope <- atan(select(maneuver_data, c('Slope')))
-corner_angle <- select(maneuver_data, c ('Corner angle'))
-r_corner <- select(maneuver_data, c ('Corner radius')) 
-c_accel <- select(maneuver_data, c ('c_accel'))
-c_decel <- select(maneuver_data, c ('c_decel'))
-maneuver_repeats <- select(maneuver_data, c ('Maneuver repeats'))
+
+
+
+
+# Add minimum longitudinal force as column to maneuver_data
+
+
+                                     
+
+
+
+
 
 
 
