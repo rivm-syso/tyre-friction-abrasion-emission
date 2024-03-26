@@ -74,7 +74,7 @@ f_roll_force <- function(c_roll, m_vehicle, grav_constant) {c_roll*m_vehicle*gra
 # In that case slope force is included in the calculation of the level of brake force that is needed for deceleration and constant speed maneuvers.
 
 f_slope_force <- function(m_vehicle, grav_constant, alpha_slope) {
-  m_vehicle * grav_constant * sin(alpha_slope*pi/180)
+  m_vehicle * grav_constant * sin(alpha_slope)
 }
 
 #'@section Brake force
@@ -280,7 +280,7 @@ f_c_max_brake <-
 #'divided by the downward normal load force perpendicular to the longitudinal direction.
 
 f_long_normal_load_force <- function(alpha_slope,m_vehicle, grav_constant)
-{cos(alpha_slope*pi/180)*(m_vehicle*grav_constant)}
+{cos(alpha_slope)*(m_vehicle*grav_constant)}
 
 #' As such, the friction coefficient upon acceleration is calculated as 
 #' the total longitudinal acceleration force divided by the normal longitudinal load force: 
@@ -619,11 +619,11 @@ f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_b
   
   #'Centripetal force at corners
   if(r_corner == 0 | is.na(r_corner)) { centripet_force = 0 } else {
-    centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*cos(alpha_bank_slope*pi/180)
+    centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*cos(alpha_bank_slope)
   }
   #'Bank slope force slope is positive if the high side of the bank is on the outside of the corner. 
   
-  bank_force = grav_constant*sin(alpha_bank_slope*pi/180)*m_vehicle
+  bank_force = grav_constant*sin(alpha_bank_slope)*m_vehicle
   
   return(abs(centripet_force - bank_force))
 } 
@@ -635,9 +635,9 @@ f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_b
 f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant, r_corner, v_vehicle){
   #'Centripetal force at corners
   if(r_corner == 0 | is.na(r_corner)) { n_centripet_force = 0 } else {
-    n_centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*sin(alpha_bank_slope*pi/180)
+    n_centripet_force = (m_vehicle*(v_vehicle^2)/r_corner)*sin(alpha_bank_slope)
   }
-  n_bank_force = cos(alpha_bank_slope * pi/180)*(m_vehicle*grav_constant)
+  n_bank_force = cos(alpha_bank_slope)*(m_vehicle*grav_constant)
   
   return(abs(n_centripet_force) + abs(n_bank_force))
 }
