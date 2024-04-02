@@ -406,6 +406,103 @@ f_corner_distance(r_corner = Sector_data$`Corner radius (m)`[2],
 
 Slip \* Distance \* Force
 
+```{r data prep}
+library(tidyverse)
+local_path <- "data/TWP emission data_IDIADA_v01.xlsx"
+
+n.Runs = 1000 # for clearly uncertrain variables, amount of values to use
+
+Maneuver_data <- readxl::read_excel(path = local_path, sheet = "Maneuver data")
+
+AllData <- 
+  Maneuver_data |> 
+  full_join(readxl::read_excel(path = local_path, sheet = "Sector data")) |> 
+  cross_join(readxl::read_excel(path = local_path, sheet = "Vehicle data")) |> 
+  full_join(readxl::read_excel(path = local_path, sheet = "Tyre_data"))
+
+Constants <- readxl::read_excel(path = local_path, sheet = "Constants")
+str(AllData)
+AllData$Vehicle_class
+AllData2 <-
+  AllData |> mutate(RolCoef_min =  fRolCoef_Tlabel(Label_fuelleff = 
+                                          `Fuel efficiency class`,
+                                        vehicle_class = Vehicle_class,
+                                        Tyre_Label_table = 
+                                          readxl::read_excel(
+                                            "data/Tyre_conversion.xlsx", 
+                                            sheet = "Label fuel efficiency class",
+                                            skip=1))$min,
+                    RolCoef_max = fRolCoef_Tlabel(Label_fuelleff = 
+                                          `Fuel efficiency class`,
+                                        vehicle_class = Vehicle_class,
+                                        Tyre_Label_table = 
+                                          readxl::read_excel(
+                                            "data/Tyre_conversion.xlsx", 
+                                            sheet = "Label fuel efficiency class",
+                                            skip=1))$max)
+
+AllData2 |> full_join() |> runif(n.Runs)
+
+
+
+AllData2$RolCoef_min  
+#TODO: selection based on track, maneuver code, tyre and verhicle
+
+c_roll_uniform <- runif(n.Runs, 
+                        fRolCoef_Tlabel(Label_fuelleff = 
+                                          Tyre_data$`Fuel efficiency class`[1],
+                                        vehicle_class = 
+                                          Tyre_data$Vehicle_class,
+                                        Tyre_Label_table = 
+                                          readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label fuel efficiency class",skip=1))$min,
+                        fRolCoef_Tlabel(Label_fuelleff = 
+                                          Tyre_data$`Fuel efficiency class`[1], 
+                                        vehicle_class = 
+                                          Tyre_data$Vehicle_class,
+                                        Tyre_Label_table = 
+                                          readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label fuel efficiency class",skip=1))$max)
+
+### Data prep ###
+grip_index_tyre_uniform <- 
+  runif(n.Runs, 
+        min = fGripIndex_Tlabel(
+          Label_wetgrip = Tyre_data$`Wet grip class`[1], # selection based on TYRE
+          vehicle_class = Tyre_data$Vehicle_class[1], # selection based on TYRE
+          Tyre_Label_table = readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label wet grip class",skip=1))$min,
+        max = fGripIndex_Tlabel(
+          Label_wetgrip = Tyre_data$`Wet grip class`[1], # selection based on TYRE
+          vehicle_class = Tyre_data$Vehicle_class[1], # selection based on TYRE
+          Tyre_Label_table = readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label wet grip class",skip=1))$max)
+# selection based on TYRE
+
+# based on sectory underground data select x_correct_mu_max_track
+switch(Sector_data$Underground[1], # SECTOR data
+       "Wet asphalt" = {
+         x_correct_mu_max_track_uniform = 1
+         optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                    filter(Name == "optimal_slip_wet_min") |> 
+                                                    pull(value),
+                                                  max =  Constants |> 
+                                                    filter(Name == "optimal_slip_wet_max") |> 
+                                                    pull(value))
+       },
+       "Dry asphalt" = {x_correct_mu_max_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                                 filter(Name == "x_correct_mu_max_wet2dry_min") |> 
+                                                                 pull(value),
+                                                               max =  Constants |> 
+                                                                 filter(Name == "x_correct_mu_max_wet2dry_max") |> 
+                                                                 pull(value))
+       optimal_slip_ratio_track_uniform = runif(n.Runs,min =  Constants |> 
+                                                  filter(Name == "optimal_slip_dry_min") |> 
+                                                  pull(value),
+                                                max =  Constants |> 
+                                                  filter(Name == "optimal_slip_dry_max") |> 
+                                                  pull(value))})
+### end data prep ###
+
+
+```
+
 # *Previous analysis jan 2024*
 
 ```{r normal_load_force}
