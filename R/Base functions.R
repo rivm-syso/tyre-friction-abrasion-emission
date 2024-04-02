@@ -112,14 +112,11 @@ f_const_speed_brake_force <- function (m_vehicle,
                                        alpha_slope, 
                                        c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
 {pmax(0, -(f_roll_force(c_roll, m_vehicle, grav_constant)
-<<<<<<< HEAD
-             + f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
-             + f_slope_force(m_vehicle, grav_constant, alpha_slope)))}
-=======
+
            + f_drag_force(c_drag=c_drag, A_vehicle=A_vehicle, rho_air=rho_air, 
                           v_vehicle = v_vehicle, v_wind=v_wind)
            + f_slope_force(m_vehicle=m_vehicle, grav_constant=grav_constant, alpha_slope=alpha_slope)))}
->>>>>>> main
+
 
 # For constant speed driving, the minimum brake force is also limited to zero.       
 
@@ -214,16 +211,6 @@ f_decel_long_force <- function(m_vehicle,
 #'The longitudinal forces during constant speed driving are the aerodynamic drag force, the rolling resistance force,
 #'the uphill slope force
 #'or if necessary an additional brake force the driver needs to remain under a speed limit at steep downhill driving.
-
-<<<<<<< HEAD
-f_const_speed_long_force<- function (c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_roll, m_vehicle, grav_constant, alpha_slope)
-{f_drag_force(c_drag, A_vehicle, rho_air, v_vehicle, v_wind) + 
-    f_roll_force(c_roll, m_vehicle, grav_constant) + 
-    pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope)) + 
-    f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
-  
- # + f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)}
-=======
 f_const_speed_long_force <- function(c_drag, 
                                      A_vehicle, 
                                      rho_air, 
@@ -238,7 +225,7 @@ f_const_speed_long_force <- function(c_drag,
     pmax(0,f_slope_force(m_vehicle, grav_constant, alpha_slope)) +
     f_const_speed_brake_force(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind)
 }
->>>>>>> main
+
 
 #'@section Longitudinal slip functions
 #' Longitudinal slip is defined here as the difference between the actual forward vehicle velocity and 
@@ -293,10 +280,6 @@ f_accel_long_mu_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_veh
 
 #' The wheelspin slip during acceleration can then calculated as the ratio of the friction coefficient to the peak friction coefficient multiplied by the optimal slip ratio.
 
-<<<<<<< HEAD
-f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
-{(f_accel_long_mu_slip (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*(1/mu_max_tyre_track))*optimal_slip_ratio_track} 
-=======
 f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, 
                                     A_vehicle, rho_air, mu_max_tyre_track,
                                     v_start_accel, v_end_accel, v_wind, alpha_slope, 
@@ -304,7 +287,7 @@ f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag,
 {f_accel_long_mu_slip (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
                        v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel)*
     (1/mu_max_tyre_track)*optimal_slip_ratio_tyre_track} 
->>>>>>> main
+
 
 #' The friction coefficient at constant speed driving is calculated as
 #' the total longitudinal force divided by the normal longitudinal load force.
@@ -319,18 +302,6 @@ f_accel_wheelspin_slip <- function (c_roll, m_vehicle, grav_constant, c_drag,
 #' The wheelspin slip at constant driving is then calculated as the ratio of the friction coefficient 
 #' to the peak friction coefficient multiplied by the optimal slip ratio.
 
-<<<<<<< HEAD
-f_constant_speed_wheelspin_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope, mu_max_tyre_track, optimal_slip_ratio_track)
-{f_constant_speed_long_mu_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope) * (1/mu_max_tyre_track) *optimal_slip_ratio_track} 
-
-
-#' The friction coefficient at deceleration is calculated as
-#' the total longitudinal force divided by the normal longitudinal load force.
-
-f_decel_long_mu_slip <- function(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel)
-{f_decel_long_force(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel)*
-    (1/f_long_normal_load_force(alpha_slope, m_vehicle, grav_constant))}
-=======
 # f_constant_speed_wheelspin_slip <- function(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope, mu_max_tyre_track, optimal_slip_ratio_tyre_track)
 # {f_constant_speed_long_mu_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)*
 #     (1/mu_max_tyre_track)*optimal_slip_ratio_tyre_track}
@@ -363,7 +334,7 @@ f_decel_long_mu_slip <- function(m_vehicle, c_roll, grav_constant, rho_air, v_st
 #     (1/f_long_normal_load_force(alpha_slope=alpha_slope,
 #                                 m_vehicle=m_vehicle,
 #                                 grav_constant=grav_constant))}
->>>>>>> main
+
 
 #' The wheelspin slip at deceleration is then calculated as the ratio of the friction coefficient 
 #' to the peak friction coefficient multiplied by the optimal slip ratio.
@@ -503,36 +474,6 @@ f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_consta
 #'@section Summing wheelspin and brake slip per maneuver
 #'
 #' The total longitudinal slip during an acceleration maneuver is calculated as wheelspin only:
-<<<<<<< HEAD
- 
-f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)
-{f_accel_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, c_accel, mu_max_tyre_track, optimal_slip_ratio_track)}
-
-#' The total longitudinal slip during a deceleration maneuver is calculated as:
-f_decel_long_slip <- function (c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope,mu_max_tyre_track, optimal_slip_ratio_track, c_max_brake)
-{f_decel_wheelspin_slip(m_vehicle, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_decel, mu_max_tyre_track, optimal_slip_ratio_track)*(1-f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake))+
-       f_decel_brake_slip(c_decel, m_vehicle, m_rotate, c_roll, grav_constant, rho_air, v_start_decel, v_end_decel, v_wind, alpha_slope, c_max_brake)}
-
-#' The total longitudinal slip during a constant speed maneuver is calculated as:
-f_const_speed_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope)
-{f_constant_speed_wheelspin_slip(c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, alpha_slope, mu_max_tyre_track, optimal_slip_ratio_track)*
-  (1-f_const_speed_brake_slip(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_max_brake))+
-     f_const_speed_brake_slip(m_vehicle, grav_constant, alpha_slope, c_roll, c_drag, A_vehicle, rho_air, v_vehicle, v_wind, c_max_brake)}
-
-#'@section Latitudinal friction force functions
-#'
-#'@section Centripetal force at corners
-
-f_centripet_force <- function(m_vehicle , v_vehicle , r_corner, alpha_bank_slope)
-  {cos(alpha_bank_slope)*m_vehicle*(v_vehicle^2)/r_corner}
-
-#'@section Bank slope force 
-#'Bank slope force slope is positive if the high side of the bank is on the outside of the corner. 
-
-f_bank_force <-function(grav_constant, alpha_bank_slope, m_vehicle)
-  {grav_constant*sin(alpha_bank_slope)*m_vehicle}
-=======
-
 f_accel_long_slip <- function (c_roll, m_vehicle, grav_constant, c_drag, A_vehicle, rho_air, 
                                v_start_accel, v_end_accel, v_wind, alpha_slope, m_rotate, 
                                c_accel, optimal_slip_ratio_tyre_track, grip_index_tyre, wet_mu_max_ref_tyre,
@@ -600,7 +541,6 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, m_rotate, grav_constant,
 
 
 #'@section Latitudinal friction force functions
->>>>>>> main
 
 #'@section Resultant latitudinal force
 #'Then bank slope force works in opposite direction to the centripetal force, 
@@ -611,10 +551,6 @@ f_const_speed_long_slip <- function (c_roll, m_vehicle, m_rotate, grav_constant,
 #'The resultant latitudinal force is not to be negative. 
 #'Therefore, the rules above are included in the routine as ((centripet_force - bank_force)^2)^0.5
 
-<<<<<<< HEAD
-f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-  {((f_centripet_force(m_vehicle , v_vehicle , r_corner, alpha_bank_slope) - f_bank_force(grav_constant, alpha_bank_slope, m_vehicle) )^2 )^0.5} 
-=======
 f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope){
   
   #'Centripetal force at corners
@@ -627,7 +563,6 @@ f_lat_force <- function(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_b
   
   return(abs(centripet_force - bank_force))
 } 
->>>>>>> main
 
 #' @section Latitudinal slip
 
@@ -642,18 +577,6 @@ f_lat_normal_load_force <- function(alpha_bank_slope,m_vehicle, grav_constant, r
   return(abs(n_centripet_force) + abs(n_bank_force))
 }
 
-
-<<<<<<< HEAD
-f_lat_mu_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)
-{f_lat_force(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)* 
-    1/(f_lat_normal_load_force(alpha_bank_slope,m_vehicle, grav_constant)+(sin(alpha_bank_slope)*m_vehicle*(v_vehicle^2)/r_corner))}
-
-#' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
-
-f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope, mu_max_tyre_track, optimal_slip_ratio_track)
-{f_lat_mu_slip(m_vehicle , v_vehicle , r_corner, grav_constant, alpha_bank_slope)*
-    (1/mu_max_tyre_track)*optimal_slip_ratio_track}
-=======
 
 #' The latitudinal slip is then calculated as the latitudinal friction coefficient divided by the peak friction coefficient multiplied with the optimal slip ratio.
 
@@ -683,29 +606,13 @@ f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant,
   
   (lat_mu_slip/mu_max_tyre_track)*optimal_slip_ratio_tyre_track
 }
->>>>>>> main
 
 #' @section Distance and time functions ####
 #' Distance and time functions are used to calculate the distances and times over which driving maneuvers 
 #' take place. The functions include f_accel_time, f_accel_distance, f_decel_time and 
 #' f_decel_distance and f_corner_distance. 
-#' 
-<<<<<<< HEAD
 #' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
-#'@section Acceleration time in s: 
-#'
-f_accel_time<-function(v_start,v_end,c_accel){(v_end-v_start)/c_accel}
-=======
->>>>>>> main
 
-#'@section Acceleration distance in m:
-#' The acceleration distance is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
-
-<<<<<<< HEAD
-f_accel_distance <- function(v_start , v_end , c_accel ) 
-{v_start*f_accel_time(v_start,v_end,c_accel)+
-    1/2*c_accel*f_accel_time(v_start,v_end,c_accel)^2}
-=======
 f_accel_distance <- function(v_start , v_end , c_accel ) {
   #' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
   #' Acceleration time in s: 
@@ -717,18 +624,9 @@ f_accel_distance <- function(v_start , v_end , c_accel ) {
   
   v_start*accel_time + 1/2*c_accel*(accel_time^2)
 }
->>>>>>> main
 
 #' Deceleration distance in m:
 
-<<<<<<< HEAD
-f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
-
-#'@section Deceleration distance in m:
-
-f_decel_distance <- function(v_start, v_end, c_decel )
-{v_end*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_decel_time(v_start, v_end, c_decel)^2}
-=======
 f_decel_distance <- function(v_start, v_end, c_decel ){
   #'Deceleration time in s:
   #'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and decelaration constant (m/s^2) of the maneuver
@@ -738,7 +636,6 @@ f_decel_distance <- function(v_start, v_end, c_decel ){
   return(v_start*decel_time+1/2*c_decel*(decel_time^2))
   
 }
->>>>>>> main
 
 #'@section Corner distance in m:
 f_corner_distance <- function(r_corner,corner_angle){
