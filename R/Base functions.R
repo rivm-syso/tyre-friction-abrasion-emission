@@ -683,29 +683,13 @@ f_lat_slip <- function (m_vehicle , v_vehicle , r_corner, grav_constant,
   
   (lat_mu_slip/mu_max_tyre_track)*optimal_slip_ratio_tyre_track
 }
->>>>>>> main
 
 #' @section Distance and time functions ####
 #' Distance and time functions are used to calculate the distances and times over which driving maneuvers 
 #' take place. The functions include f_accel_time, f_accel_distance, f_decel_time and 
 #' f_decel_distance and f_corner_distance. 
-#' 
-<<<<<<< HEAD
 #' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
-#'@section Acceleration time in s: 
-#'
-f_accel_time<-function(v_start,v_end,c_accel){(v_end-v_start)/c_accel}
-=======
->>>>>>> main
 
-#'@section Acceleration distance in m:
-#' The acceleration distance is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
-
-<<<<<<< HEAD
-f_accel_distance <- function(v_start , v_end , c_accel ) 
-{v_start*f_accel_time(v_start,v_end,c_accel)+
-    1/2*c_accel*f_accel_time(v_start,v_end,c_accel)^2}
-=======
 f_accel_distance <- function(v_start , v_end , c_accel ) {
   #' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
   #' Acceleration time in s: 
@@ -717,18 +701,9 @@ f_accel_distance <- function(v_start , v_end , c_accel ) {
   
   v_start*accel_time + 1/2*c_accel*(accel_time^2)
 }
->>>>>>> main
 
 #' Deceleration distance in m:
 
-<<<<<<< HEAD
-f_decel_time<-function(v_start,v_end,c_decel){(v_start-v_end)/c_decel}
-
-#'@section Deceleration distance in m:
-
-f_decel_distance <- function(v_start, v_end, c_decel )
-{v_end*f_decel_time(v_start, v_end, c_decel)+1/2*c_decel*f_decel_time(v_start, v_end, c_decel)^2}
-=======
 f_decel_distance <- function(v_start, v_end, c_decel ){
   #'Deceleration time in s:
   #'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and decelaration constant (m/s^2) of the maneuver
@@ -738,7 +713,6 @@ f_decel_distance <- function(v_start, v_end, c_decel ){
   return(v_start*decel_time+1/2*c_decel*(decel_time^2))
   
 }
->>>>>>> main
 
 #'@section Corner distance in m:
 f_corner_distance <- function(r_corner,corner_angle){
