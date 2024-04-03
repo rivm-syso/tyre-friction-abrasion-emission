@@ -4,7 +4,7 @@
 # Tyre_Label_table <- readxl::read_excel("data/Tyre_conversion.xlsx", sheet = "Label fuel efficiency class",skip=1)
 
 fRolCoef_Tlabel <- function(Label_fuelleff="A", # A, B, C, D, E
-                            vehicle_class="C1",
+                            Vehicle_class="C1",
                             Tyre_Label_table) { # C1, C2, C3 
 
 # Tyre_Label_table  <- 
@@ -18,17 +18,17 @@ fRolCoef_Tlabel <- function(Label_fuelleff="A", # A, B, C, D, E
     sep = "_"
   ) 
  
-  list(min= dataprep |> filter(`Vehicle class` == vehicle_class & 
+  list(min= dataprep |> filter(`Vehicle class` == Vehicle_class & 
                                     `Class Min/Max` == "min" &  
                                     `Label_fuel_efficiency_class` == Label_fuelleff) |> pull( `roll coefficient`),
-       max = dataprep|> filter(`Vehicle class` == vehicle_class & 
+       max = dataprep|> filter(`Vehicle class` == Vehicle_class & 
                                  `Class Min/Max` == "max" &  
                                  `Label_fuel_efficiency_class` == Label_fuelleff) |> pull( `roll coefficient`))
    
 }
 
 fGripIndex_Tlabel <- function(Label_wetgrip, # A, B, C, D, E
-                            vehicle_class,
+                            Vehicle_class,
                             Tyre_Label_table) { # C1, C2, C3 
   
   # Tyre_Label_table  <- 
@@ -42,10 +42,10 @@ fGripIndex_Tlabel <- function(Label_wetgrip, # A, B, C, D, E
     sep = "_"
   ) 
   
-  list(min= dataprep |> filter(`Vehicle class` == vehicle_class & 
+  list(min= dataprep |> filter(`Vehicle class` == Vehicle_class & 
                                  `Class Min/Max` == "min" &  
                                  `Label_wet_grip_class` == Label_wetgrip) |> pull( `Grip Index`),
-       max = dataprep|> filter(`Vehicle class` == vehicle_class & 
+       max = dataprep|> filter(`Vehicle class` == Vehicle_class & 
                                  `Class Min/Max` == "max" &  
                                  `Label_wet_grip_class` == Label_wetgrip) |> pull( `Grip Index`))
   
