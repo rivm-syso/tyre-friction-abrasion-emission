@@ -20,8 +20,8 @@ source("R/Tyrelabel_conversion.R")
 #'@param optimal_slip_ratio_tyre_track The slip ratio between the tyre and the track at the peak friction coefficient
 
 ## Road surface underground parameters
-#'@param apha_bank_slope Bank slope of the road in latitudinal direction (degrees)
-#'@param alpha_slope Slope of the road in longitudinal direction (degrees)' 
+#'@param apha_bank_slope Bank slope of the road in latitudinal direction (rad)
+#'@param alpha_slope Slope of the road in longitudinal direction (rad)' 
 #'@param optimal_ratio_slip_track Optimal slip ratio of the track underground
 #'@param r_corner Radius of the corner (m)
 #'@param x_correct_mu_max_track A correction factor for the maximum friction coefficient across different undergrounds
