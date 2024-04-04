@@ -144,6 +144,7 @@ f_accel_long_force <- function(c_roll, m_vehicle,
                                grav_constant, c_drag, A_vehicle, rho_air, 
                                v_start_accel, v_end_accel, v_wind, alpha_slope, 
                                m_rotate, c_accel){
+  if(v_start_accel == v_end_accel | v_end_accel < v_start_accel) return(0)
   f_roll_force(c_roll=c_roll, 
                m_vehicle=m_vehicle, 
                grav_constant=grav_constant)
@@ -177,7 +178,7 @@ f_decel_long_force <- function(m_vehicle,
                                alpha_slope,
                                m_rotate,
                                c_decel){
-  
+  if(v_start_decel == v_end_decel | v_start_decel < v_end_decel) return(0)
   roll_force = f_roll_force(c_roll=c_roll, 
                             m_vehicle=m_vehicle, 
                             grav_constant=grav_constant)
@@ -618,7 +619,9 @@ f_accel_distance <- function(v_start , v_end , c_accel ) {
   #' Acceleration time in s: 
   #' 
   if(c_accel == 0) return(0)
-  if(v_start > v_end) stop("deceleration function needed")
+  if(v_start > v_end) {warning("deceleration function needed")
+  return(0)
+    }
   
   accel_time = (v_end-v_start)/c_accel
   
@@ -631,7 +634,9 @@ f_decel_distance <- function(v_start, v_end, c_decel ){
   #'Deceleration time in s:
   #'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and decelaration constant (m/s^2) of the maneuver
   if(c_decel == 0) return(0)
-  if(v_start < v_end) stop("acceleration function needed")
+  if(v_start < v_end) {warning("acceleration function needed") 
+    return(0)
+    }
   decel_time = (v_start-v_end)/c_decel
   return(v_start*decel_time+1/2*c_decel*(decel_time^2))
   
