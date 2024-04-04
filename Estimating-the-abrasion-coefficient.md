@@ -396,3 +396,41 @@ Longitutidal and Lattidunal forces are calculated
                         .keep = c("used")
                         
       )
+
+    library(readxl)
+    IDIADAwear <- readxl::read_excel("data/Abrasion test_WP2.3_Leon-T_IDIADA.xlsx", skip = 9)
+
+    ## New names:
+    ## • `` -> `...1`
+    ## • `` -> `...2`
+
+    #provide proper column names
+    names(IDIADAwear)[c(1,2)] <- c("Tyre","Wheel")
+    names(IDIADAwear) <- sapply(names(IDIADAwear), function(x){
+      gsub("-", "_", x)
+    })
+    #extend Tyre to all its rows
+    for(i in 1:nrow(IDIADAwear)){
+      if(is.na(IDIADAwear$Tyre[i])){
+        IDIADAwear$Tyre[i] <- IDIADAwear$Tyre[i-1]
+      }
+    }
+    #What?
+    IDIADAwear$C0 <- NULL
+    #Track to long format
+    WearAsLong <- tidyr::pivot_longer(IDIADAwear, 
+                               names(IDIADAwear)[!names(IDIADAwear) %in% c("Tyre","Wheel")],
+                               names_to = "track",
+                               values_to = "wear")
+    WearAsLong$track[WearAsLong$track %in% c("R1", "R2", "R3")] <- "R"
+
+    #remove the aggregates 
+    WearAsLong <- WearAsLong[WearAsLong$Wheel %in% c("FR ", "FL", "RR ", "RL"),]
+    Map2track <- unique(WearAsLong$track)
+    table(WearAsLong$track)
+
+    ## 
+    ##      R T1_Mot T1_Rur  T1_Ur T2_Mot T2_Rur  T2_Ur T3_Mot T3_Rur  T3_Ur T4_Mot 
+    ##     42     14     14     14     14     14     14     14     14     14     14 
+    ## T4_Rur  T4_Ur T5_Mot T5_Rur  T5_Ur 
+    ##     14     14     14     14     14

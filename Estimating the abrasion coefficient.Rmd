@@ -386,3 +386,41 @@ FrictionWork =
 
 ```
 
+
+```{r abrasion data}
+
+
+
+library(readxl)
+IDIADAwear <- readxl::read_excel("data/Abrasion test_WP2.3_Leon-T_IDIADA.xlsx", skip = 9)
+
+#provide proper column names
+names(IDIADAwear)[c(1,2)] <- c("Tyre","Wheel")
+names(IDIADAwear) <- sapply(names(IDIADAwear), function(x){
+  gsub("-", "_", x)
+})
+#extend Tyre to all its rows
+for(i in 1:nrow(IDIADAwear)){
+  if(is.na(IDIADAwear$Tyre[i])){
+    IDIADAwear$Tyre[i] <- IDIADAwear$Tyre[i-1]
+  }
+}
+#What?
+IDIADAwear$C0 <- NULL
+#Track to long format
+WearAsLong <- tidyr::pivot_longer(IDIADAwear, 
+                           names(IDIADAwear)[!names(IDIADAwear) %in% c("Tyre","Wheel")],
+                           names_to = "track",
+                           values_to = "wear")
+WearAsLong$track[WearAsLong$track %in% c("R1", "R2", "R3")] <- "R"
+
+#remove the aggregates 
+WearAsLong <- WearAsLong[WearAsLong$Wheel %in% c("FR ", "FL", "RR ", "RL"),]
+Map2track <- unique(WearAsLong$track)
+table(WearAsLong$track)
+
+
+
+
+```
+
