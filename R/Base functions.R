@@ -208,7 +208,7 @@ f_decel_long_force <- function(m_vehicle,
   return(roll_force + drag_force + slope_force + decel_brake_force)
 }
 
-#'@section Total longitudinal resistant force at constant speed driving
+#'@section Total longitudinal resistant force at constant speed driving (N)
 #'The longitudinal forces during constant speed driving are the aerodynamic drag force, the rolling resistance force,
 #'the uphill slope force
 #'or if necessary an additional brake force the driver needs to remain under a speed limit at steep downhill driving.
@@ -618,8 +618,9 @@ f_accel_distance <- function(v_start , v_end , c_accel ) {
   #' The acceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and accelaration constant (m/s^2) of the maneuver
   #' Acceleration time in s: 
   #' 
-  if(c_accel == 0) return(0)
-  if(v_start > v_end) {warning("deceleration function needed")
+  if(c_accel == 0 & v_start == v_end)  return(0)
+  if(c_accel == 0 & v_start < v_end)  stop("acceleration c_accel needed")  
+  if(v_start > v_end) {
   return(0)
     }
   
@@ -632,12 +633,13 @@ f_accel_distance <- function(v_start , v_end , c_accel ) {
 
 f_decel_distance <- function(v_start, v_end, c_decel ){
   #'Deceleration time in s:
-  #'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and decelaration constant (m/s^2) of the maneuver
-  if(c_decel == 0) return(0)
-  if(v_start < v_end) {warning("acceleration function needed") 
-    return(0)
-    }
+  #'The deceleration time is calculated from the starting velocity (m/s), end velocity (m/s) and deceleration constant (m/s^2) of the maneuver
+  if(c_decel == 0 & v_start == v_end) return(0)
+  if(c_decel == 0 & v_start > v_end) stop("deceleration rate c_decel needed")
+  if(v_start < v_end) { return(0) } # no distance for deceleration when acceleration is taking place
+  
   decel_time = (v_start-v_end)/c_decel
+  
   return(v_start*decel_time+1/2*c_decel*(decel_time^2))
   
 }
