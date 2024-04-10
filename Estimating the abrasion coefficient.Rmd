@@ -375,32 +375,41 @@ AllData_fw <-
                FWLat = list(
                  SlipCornLatt_M*ForceCornLatt_M*(DistanceManAccel+DistanceManDecel) +
                    SlipCornLatt_C*ForceCornLatt_C*DistanceConst),
-               FricWork_p_sector = list((FWAccelLong+FWDecelLong+FWConstLong+FWLat))
+               FricWork_p_sector = list((FWAccelLong+FWDecelLong+FWConstLong+FWLat)) # calculate FW per sector
                
   )
 
-AllData_fw$FricWork_p_km
 FWtotals <-
   AllData_fw |> ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
-  unnest(FricWork_p_sector)
+  unnest(FricWork_p_sector) #get the uncertainty runs to the tibble for summarise
 
-length(test2$Track)
-test2 <- test2 |>  mutate(RUN = rep(1:1000))
+length(FWtotals$Track)
+FWtotals <- FWtotals |>  mutate(RUN = rep(1:1000)) # give code to each run
 
 FWtotals <-
   FWtotals |> ungroup() |> 
-  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`) |> 
+  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`, `Number of laps`) |> 
   summarise(sector_count = n(),
-            PartFrictionWork = sum(FricWork_p_sector)) |> 
-    mutate(SectionFrictionWork = PartFrictionWork *`Total distance (km)`)
+            PartFrictionWork = sum(FricWork_p_sector)) |> # sum up all friction work per test section (e.g. rural 60 kph)
+  mutate(SectionFrictionWork = PartFrictionWork *`Number of laps`) # multiple test section with number of laps to get total FW per test per section
 
-FWtotals |>  ungroup() |> 
+FWtotals <-
+  FWtotals |>  ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN,`Total distance (km)`) |> 
   summarise(Section_count = n(),
-            TotFrictionWork = sum(SectionFrictionWork),
-            Test_Distance_km = sum(`Total distance (km)`)) |> 
-  mutate(FW_p_km = TotFrictionWork/Test_Distance_km)
+            TotFrictionWork = sum(SectionFrictionWork), # sum the test sections to get total FW for the whole arbasion test
+            Test_Distance_km = sum(`Total distance (km)`)) |> # sum up also the distance of each test section to get total distace driven in each test.
+  mutate(FW_p_km = TotFrictionWork/Test_Distance_km) # devide total FW per test by the distance driven per test
+
+library(ggplot2)
+
+plotdata <- FWtotals |> filter(Tyre_brand == "Dunlop" & Scenario == "Standard") # plot FW for each test (J per km)
+
+plot <- ggplot(FWtotals, aes(x = c(AbrasionTest), y = FW_p_km, fill=AbrasionTest )) +
+  geom_boxplot()
+plot+  scale_y_log10(labels = scales::number_format())
+# boxplot(FWtotals)
 
 ### end of FW
 
