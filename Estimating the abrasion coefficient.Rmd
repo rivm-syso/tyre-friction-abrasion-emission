@@ -354,7 +354,7 @@ AllData <-
 ## 4. Total Friction Work
 
 ```{r FrictionWork}
-AllData <- 
+AllData_fw <- 
   AllData |> mutate(
     DistanceManAccel =
       f_accel_distance(v_start = `Start speed (m/s)`,
@@ -375,17 +375,42 @@ AllData <-
                FWLat = list(
                  SlipCornLatt_M*ForceCornLatt_M*(DistanceManAccel+DistanceManDecel) +
                    SlipCornLatt_C*ForceCornLatt_C*DistanceConst),
-               TotalFricWork_p_km = list((FWAccelLong+FWDecelLong+FWConstLong+FWLat)/`Distance (m)`)
+               FricWork_p_sector = list((FWAccelLong+FWDecelLong+FWConstLong+FWLat))
                
   )
+
+AllData_fw$FricWork_p_km
+test2<-
+  AllData_fw |> ungroup() |> 
+  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
+  unnest(FricWork_p_sector)
+
+length(test2$Track)
+test2 <- test2 |>  mutate(RUN = rep(1:1000))
+
+FW1 <-
+  test2 |> ungroup() |> 
+  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`) |> 
+  summarise(sector_count = n(),
+            PartFrictionWork = sum(FricWork_p_sector)) |> 
+    mutate(SectionFrictionWork = PartFrictionWork *`Total distance (km)`)
+
+test2 |>  ungroup() |> 
+  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN,`Total distance (km)`) |> 
+  summarise(Section_count = n(),
+            TotFrictionWork = sum(SectionFrictionWork),
+            Test_Distance_km = sum(`Total distance (km)`)) |> 
+  mutate(FW_p_km = TotFrictionWork/Test_Distance_km)
 
 ### end of FW
 
 ```
 
+## 5. Abrasion Coefficient
 
-```{r abrasion data}
+```{r abrasion coeff}
 
+# read in and prepare abrasion rate measurement data
 IDIADAwear <- readxl::read_excel(path = local_path, sheet = "Abrasion", skip = 9)
 
 #provide proper column names
@@ -420,22 +445,31 @@ WearAsLong <- tidyr::pivot_longer(IDIADAwear,
 
 WearAsLong <-
   WearAsLong |> mutate(
-  AbrasionTest = 
-    AbrasionTest |> recode(
-      "Runin" = "Run-in",
-      "Rur" = "Rural",
-      "Mot" = "Motorway",
-      "Ur" = "Urban"
-    ),
-  Scenario = Scenario |> 
-    replace_na("Standard")
+    AbrasionTest = 
+      AbrasionTest |> recode(
+        "Runin" = "Run-in",
+        "Rur" = "Rural",
+        "Mot" = "Motorway",
+        "Ur" = "Urban"
+      ),
+    Scenario = Scenario |> 
+      replace_na("Standard")
   )
 unique(WearAsLong$Tyre_brand)
-test <- full_join(WearAsLong,AllData)
+test <- left_join(WearAsLong,AllData)
+test <- inner_join(WearAsLong,AllData)
 unique(test$Abrasion_mg_km)
+length(test$Abrasion_mg_km)
+length(WearAsLong$Abrasion_mg_km)
 unique(test$Scenario)
 unique(AllData$Scenario)
 test |> filter(Scenario == "High temperature")
+
+
+
+test2 <-
+  test |> group_by(AbrasionTest,Scenario,Tyre_brand, Shift) |> 
+  summarise(Abrasionsum = sum(Abrasion_mg_km))
 
 ```
 
