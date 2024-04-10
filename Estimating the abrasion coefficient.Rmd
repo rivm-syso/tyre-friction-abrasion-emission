@@ -396,7 +396,7 @@ FWtotals <-
 
 FWtotals <-
   FWtotals |>  ungroup() |> 
-  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN,`Total distance (km)`) |> 
+  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN) |> 
   summarise(Section_count = n(),
             TotFrictionWork = sum(SectionFrictionWork), # sum the test sections to get total FW for the whole arbasion test
             Test_Distance_km = sum(`Total distance (km)`)) |> # sum up also the distance of each test section to get total distace driven in each test.
@@ -406,11 +406,23 @@ library(ggplot2)
 
 plotdata <- FWtotals |> filter(Tyre_brand == "Dunlop" & Scenario == "Standard") # plot FW for each test (J per km)
 
-plot <- ggplot(FWtotals, aes(x = c(AbrasionTest), y = FW_p_km, fill=AbrasionTest )) +
-  geom_boxplot()
+plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Tyre_brand )) +
+  geom_violin()
 plot+  scale_y_log10(labels = scales::number_format())
 # boxplot(FWtotals)
 
+plotdata <- FWtotals |> filter( Scenario == "Standard") # plot FW for each test (J per km)
+
+plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Tyre_brand )) +
+  geom_violin()
+plot+  scale_y_log10(labels = scales::number_format())
+
+
+plotdata <- FWtotals |> filter( Scenario == "High load"|Scenario == "Standard",Tyre_brand == "LingLong") # plot FW for each test (J per km)
+
+plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Scenario )) +
+  geom_violin()
+plot+  scale_y_log10(labels = scales::number_format())
 ### end of FW
 
 ```
