@@ -380,7 +380,7 @@ AllData_fw <-
   )
 
 AllData_fw$FricWork_p_km
-test2<-
+FWtotals <-
   AllData_fw |> ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
   unnest(FricWork_p_sector)
@@ -388,14 +388,14 @@ test2<-
 length(test2$Track)
 test2 <- test2 |>  mutate(RUN = rep(1:1000))
 
-FW1 <-
-  test2 |> ungroup() |> 
+FWtotals <-
+  FWtotals |> ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`) |> 
   summarise(sector_count = n(),
             PartFrictionWork = sum(FricWork_p_sector)) |> 
     mutate(SectionFrictionWork = PartFrictionWork *`Total distance (km)`)
 
-test2 |>  ungroup() |> 
+FWtotals |>  ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN,`Total distance (km)`) |> 
   summarise(Section_count = n(),
             TotFrictionWork = sum(SectionFrictionWork),
