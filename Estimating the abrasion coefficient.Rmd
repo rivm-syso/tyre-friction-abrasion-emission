@@ -423,6 +423,7 @@ plotdata <- FWtotals |> filter( Scenario == "High load"|Scenario == "Standard",T
 plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Scenario )) +
   geom_violin()
 plot+  scale_y_log10(labels = scales::number_format())
+
 ### end of FW
 
 ```
