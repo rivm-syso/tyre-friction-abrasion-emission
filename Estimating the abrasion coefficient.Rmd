@@ -391,7 +391,7 @@ FWtotals <-
   FWtotals |> ungroup() |> 
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`, `Number of laps`) |> 
   summarise(sector_count = n(),
-            PartFrictionWork = sum(FricWork_p_sector)) |> # sum up all friction work per test section (e.g. rural 60 kph)
+            PartFrictionWork = sum(FricWork_p_sector)) |> # sum up all friction work per test section(for maneuvers?) (e.g. rural 60 kph)
   mutate(SectionFrictionWork = PartFrictionWork *`Number of laps`) # multiple test section with number of laps to get total FW per test per section
 
 FWtotals <-
@@ -477,21 +477,170 @@ WearAsLong <-
     Scenario = Scenario |> 
       replace_na("Standard")
   )
-unique(WearAsLong$Tyre_brand)
-test <- left_join(WearAsLong,AllData)
-test <- inner_join(WearAsLong,AllData)
-unique(test$Abrasion_mg_km)
-length(test$Abrasion_mg_km)
-length(WearAsLong$Abrasion_mg_km)
-unique(test$Scenario)
-unique(AllData$Scenario)
-test |> filter(Scenario == "High temperature")
+
+WearAsLong <- # aggregate data per wheel to total per vehicle
+  WearAsLong |> ungroup() |> 
+  group_by(Tyre_brand ,Scenario ,Shift , AbrasionTest) |> 
+  summarise(Abrasion_mg_km = sum(Abrasion_mg_km),
+            nWheels = n())
+
+CombinedFW_TW <- 
+  left_join(WearAsLong,FWtotals, relationship = "many-to-many") |> 
+  mutate(AbrasionCoeff = Abrasion_mg_km / FW_p_km) |> # Calculate the abrasion coefficient
+  mutate(TestScenName = paste(Tyre_brand, Scenario, sep = "-"))
+
+# figure of tyre fricction work
+
+```
 
 
+```{r figures standard scenarios}
+plot_theme = theme(
+  axis.title.x = element_text(size = 10),
+  axis.text = element_text(size = 8), 
+  axis.title.y = element_text(size = 10),
+  plot.background = element_rect(fill = 'white'),
+  panel.background = element_rect(fill = 'white'),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  axis.line = element_line(color='black'),
+  plot.margin = margin(1, 1, 1, 1, "cm")
+  #panel.grid.major = element_line(colour = "grey",size=0.25)
+)
 
-test2 <-
-  test |> group_by(AbrasionTest,Scenario,Tyre_brand, Shift) |> 
-  summarise(Abrasionsum = sum(Abrasion_mg_km))
+FW_plot <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
+                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(TestScenName, FW_p_km))) +
+  geom_violin()+
+  # theme(legend.position="none")+
+  # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
+  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
+  # coord_flip() +
+  plot_theme +
+  labs(fill = "Tyre")
+FW_plot
+
+ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+
+plot
+
+# Figure of abrasion measurements per tyre type tested
+plotdata <- CombinedFW_TW |> 
+  filter( Scenario == "Standard") |> ungroup() |> 
+  group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |> 
+  summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
+            n=n(),
+            sd=sd(Abrasion_mg_km))
+
+ggplot(plotdata, 
+       aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
+  geom_boxplot() + 
+  geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
+             position = position_jitterdodge(jitter.width = 0.1,
+                                             dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+
+ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+
+ACplot1 <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
+  geom_boxplot() +
+  geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
+             position = position_jitterdodge(jitter.width = 0.05,
+                                                                         dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+ACplot1
+ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+ACplot2 <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
+  geom_boxplot() +
+  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
+  #                                                                      dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+ACplot2
+ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+```
+
+
+```{r figures all scenarios}
+
+####### Figures with all scenario's ########
+
+FW_plot <- ggplot(CombinedFW_TW, 
+                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(TestScenName, FW_p_km))) +
+  geom_violin()+
+  # theme(legend.position="none")+
+  # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
+  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
+  # coord_flip() +
+  plot_theme +
+  labs(fill = "Tyre")
+FW_plot
+
+ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+
+plot
+
+# Figure of abrasion measurements per tyre type tested
+plotdata <- CombinedFW_TW |>  ungroup() |> 
+  group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |> 
+  summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
+            n=n(),
+            sd=sd(Abrasion_mg_km))
+
+ggplot(plotdata, 
+       aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
+  geom_boxplot() + 
+  geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
+             position = position_jitterdodge(jitter.width = 0.1,
+                                             dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+
+ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+
+ACplot1 <- ggplot(CombinedFW_TW, 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
+  geom_boxplot() +
+  geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
+             position = position_jitterdodge(jitter.width = 0.05,
+                                                                         dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+ACplot1
+ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
+
+ACplot2 <- ggplot(CombinedFW_TW, 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
+  geom_boxplot() +
+  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
+  #                                                                      dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+  
+  plot_theme 
+ACplot2
+ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 12, height = 6)
 
 ```
 
