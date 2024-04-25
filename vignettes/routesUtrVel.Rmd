@@ -1,0 +1,406 @@
+---
+title: "frequency in use of connections between road segments"
+author: "js"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(root.dir = rprojroot::find_rstudio_root_file())
+library(sf)
+library(magrittr)
+library(igraph)
+library(mapview)
+```
+
+## Intro
+
+Corners are important to assess the abbration on wheels. The use (cars / year) of road segments is known in most cases, but the use of connections, partly corners, is unknown. This vignettes describes how the assessment of the connections is made for a (circular) part of the Netherlands. We will create routes, in a simple way (given the available resources) to estimate the frequency of cars taking a turn, and create a simple machine learning model to estimate the cornering.
+In the data available the one way streets are indicated but the direction is missing. This important property for generating routes is, as far as possible, derived from traffic signs and investigation of parallel running lanes that are present in the data as different road segments.
+The unique list starting and ending point of road segments are the vertices of a graph and using the igraph package it is easy to generate routes.
+
+### Preparations
+
+(work Anne) A list of wegvlakken (Dutch: segments of road, furher abbreviated as WVK) of an circular area of the Netherlands, including cities, rural area and highways (Utrecht and Veluwe), is created and selection of related is made using the script "PrepUtreVel.R", rather straightforward and timeconsuming due to sizes; The RDS-files are read, and vertices are prepared. The two xxxPID variables are atomic identifiers for the points, later needed for the graph.
+
+```{r}
+
+WegVKUtreVel <- readRDS("../data/WegVKUtreVel.RDS")
+verkrsbordUtreVel <- readRDS("../data/verkrsbordUtreVel.RDS")
+# There is no way of differentiating between start and end
+startPnt <- readRDS("../data/startPnt.RDS")
+endPnt <- readRDS("../data/endPnt.RDS")
+
+sPIDdf <- as.data.frame(round(st_coordinates(startPnt)))
+startPntsPID <- paste(round(sPIDdf$X), round(sPIDdf$Y), sep = "")
+sPIDdf <- as.data.frame(round(st_coordinates(endPnt)))
+endPntsPID <- paste(round(sPIDdf$X), round(sPIDdf$Y), sep = "")
+
+# We will need the start/end icw WVK_ID when building the graph
+WegVKUtreVel$startPoint <- startPntsPID
+WegVKUtreVel$endPoint <- endPntsPID
+
+uniqPoints <- unique(c(startPntsPID, endPntsPID))
+#We will need ID's for the point, we generate them by their x and y
+cat ("NO graph vertices" )
+length(uniqPoints)
+```
+
+### The onewaystreets(, excluding highways ?)
+
+Oneway road segments are are distinguished by either going from its start point (in startPnt) to its end point (in endPnt) by indicating a "StartToEnd", or vise versa indicated by "EndToStart". Traffic signs are assigned to road segments, if possible; we take the closest begin or endpoint within 15 meters of the sign. 
+
+```{r}
+IsOneWay <- WegVKUtreVel$RIJRICHTNG=="H"
+OneWay <- WegVKUtreVel[IsOneWay,]
+OneStart <- startPnt[IsOneWay]
+OneEnd <- endPnt[IsOneWay]
+
+OneWayNoOppositeTRaffic = "C3"
+OneWayDoNotEnter = "C2"
+OneWayThisWaySignUtreVel <- verkrsbordUtreVel[verkrsbordUtreVel$rvvCode == OneWayNoOppositeTRaffic,] 
+OneWayThisWaySignUtreVel <- st_as_sf(OneWayThisWaySignUtreVel, coords = c("x", "y"), crs = st_crs(WegVKUtreVel))
+OneWayOtherWaySignUtreVel <- verkrsbordUtreVel[verkrsbordUtreVel$rvvCode == OneWayDoNotEnter,]
+OneWayOtherWaySignUtreVel <- st_as_sf(OneWayOtherWaySignUtreVel, coords = c("x", "y"), crs = st_crs(WegVKUtreVel))
+
+closestWVK_ID <- st_nearest_feature(OneWayThisWaySignUtreVel, OneWay, check_crs = F)
+closestStart <- OneStart[closestWVK_ID]
+closestEnd <- OneEnd[closestWVK_ID]
+
+distStart <- st_distance(closestStart, OneWayThisWaySignUtreVel, by_element = T)
+distEnd <- st_distance(closestEnd, OneWayThisWaySignUtreVel, by_element = T)
+StartToEnd <- (distStart < distEnd) & as.numeric(distStart) < 15 #m
+EndToStart <- (distStart > distEnd) & as.numeric(distEnd) < 15 #m
+OneWay$Direct <- ""
+OneWay$Direct[closestWVK_ID[StartToEnd]] <- "StartToEnd"
+OneWay$Direct[closestWVK_ID[EndToStart]] <- "EndToStart"
+
+#similar for the other sign
+closestWVK_ID <- st_nearest_feature(OneWayOtherWaySignUtreVel, OneWay, check_crs = F)
+closestStart <- startPnt[closestWVK_ID]
+closestEnd <- endPnt[closestWVK_ID]
+
+distStart <- st_distance(closestStart, OneWayOtherWaySignUtreVel, by_element = T)
+distEnd <- st_distance(closestEnd, OneWayOtherWaySignUtreVel, by_element = T)
+StartToEnd <- (distStart > distEnd) & as.numeric(distEnd) < 15 #m #ignore small WVK's
+EndToStart <- (distStart < distEnd) & as.numeric(distStart) < 15 #m
+
+OneWay$Direct[closestWVK_ID[StartToEnd]] <- "StartToEnd"
+OneWay$Direct[closestWVK_ID[EndToStart]] <- "EndToStart"
+
+#resulting in:
+table(OneWay$Direct)
+```
+### The segments that are lanes of the same road are also one way, but not indicated by signs; only the 'right' one is to be used; Not straitforward to program, and not made easy by the properties of the data; some segments have the same end as their begin. These one way "circles" are removed. Also the path of the line is irrelevant and needs removing, we use lines with two points only.
+
+```{r}
+ParWays <- OneWay[OneWay$Direct == "",]
+ParWays <- ParWays[ParWays$Length > 75,] #we're not interested in short ones now
+#take the first and last points
+ParWaysGeom <- st_sfc(lapply(st_geometry(ParWays), function(x) {
+  if (length(x) > 1) {
+    asM <- matrix(as.numeric(x), ncol=2)
+    st_linestring(asM[c(2,nrow(asM)-1),])
+  } else {x}
+}))
+#all have 4 coordinates (x1, y1, x2, y2)
+#any(sapply(ParWaysGeom, length) != 4)
+# Remove thos with begin == end
+Circels <- sapply(1:length(ParWaysGeom), function(i) {
+  coords <- st_coordinates(ParWaysGeom[i])
+  coords[1,1] == coords[2,1] &&
+    coords[1,2] == coords[2,2]
+})
+#table(Circels)
+
+#remove from ParWays (source of WVK) and ParWaysGeom (which is used further)
+ParWays <- ParWays[!Circels,]
+ParWaysGeom <- st_sfc(lapply(st_geometry(ParWays), function(x) {
+  if (length(x) > 1) {
+    asM <- matrix(as.numeric(x), ncol=2)
+    st_linestring(asM[c(1,nrow(asM)),])
+  } else {x}
+}))
+```
+### identify which segments are just separate lanes
+
+The run in parallel, but we can't distinguish first from last, they might be in given opposite direction. The 'right' way is determined by the diagonal, and wether it's left of the 'right'. We create some functions for convenience.
+
+```{r}
+# Functions to calculate slope of a line
+NormSlope <- function(x, y){
+  angle = atan2(x, y)  # atan2(y, x) or atan2(sin, cos)
+  #normalise to the range (-??, ??]:
+  if (angle > pi){
+     angle <- angle - 2 * pi
+  } else if (angle <= -pi) {
+     angle <- angle + 2 * pi; 
+  }
+  angle
+}
+
+calculate_slope <- function(line) {
+  gline <- st_geometry(line)
+  coords <- st_coordinates(gline) #x1, x2, y1, y2
+  #shift start to (0,0), take x2,y2
+  x <- coords[2] - coords[1]
+  y <- coords[4] - coords[3]
+  NormSlope(x, y)
+}
+
+left_of <- function(diagonal, slope1){
+  diagonal <- (diagonal + pi) %% (2*pi) - pi
+  slope1 <- (slope1 + pi) %% (2*pi) - pi
+  return((diagonal - slope1 + pi) %% (2*pi) < pi)
+}
+are_almost_parallel <- function(slope1, slope2, opposite_threshold) {
+  if (is.na(slope1) | is.na(slope2)) return (F)
+  if (is.infinite(slope1) | is.infinite(slope2)) return(F)
+  (abs(abs(slope1 - slope2) - pi) < opposite_threshold) |
+    (abs(slope1 - slope2) < opposite_threshold)
+}
+# Define opposite / parallel threshold
+opposite_threshold <- 0.02 # Rad
+
+```
+
+Now the actual work to find pairs of segments that are parallel part of the same street.
+
+```{r}
+# Calculate slopes for each line
+slopes <- sapply(ParWaysGeom, calculate_slope)
+pairs <- combn(length(slopes), 2)
+
+# Initialize a list to store the indices of lines with opposite directions
+opposite_direction_indices <- list()
+
+# Check each pair for almost opposite lines and determine their direction
+for (i in 1:ncol(pairs)) {
+  line1_index <- pairs[1, i]
+  line2_index <- pairs[2, i]
+  
+  slope1 <- slopes[line1_index]
+  slope2 <- slopes[line2_index]
+  
+  if (are_almost_parallel(slope1, slope2, opposite_threshold)) {
+    #obtain first/last points
+    line1 <- st_cast(st_geometry(ParWaysGeom[line1_index]), "POINT")
+    line2 <- st_cast(st_geometry(ParWaysGeom[line2_index]), "POINT")
+    
+    dist <- st_distance(ParWaysGeom[line1_index], ParWaysGeom[line2_index])
+    #for checking if they are continuations of on another
+    distBE4 <- st_distance(line1, line2)
+    oneZero <- sum(distBE4 == 0) == 1
+    largestDist <- max(distBE4) > max(st_distance(line1))
+    if (dist < 75 & (!oneZero & largestDist)) {
+      #around some traffic island?
+      if (dist == 0){ #mapview(ParWays[c(line1_index, line2_index),])
+        #take 2 and prelast point
+        ParWaysGeom2 <- st_sfc(lapply(st_geometry(ParWays[c(line1_index, line2_index),]), function(x) {
+          if (length(x) > 1) {
+            asM <- matrix(as.numeric(x), ncol=2)
+            st_linestring(asM[c(2,nrow(asM)-1),])
+          } else {x}
+        })) #mapview(ParWaysGeom2)
+        line1 <- st_cast(st_geometry(ParWaysGeom2[1]), "POINT")
+        line2 <- st_cast(st_geometry(ParWaysGeom2[2]), "POINT")
+      }
+      # Check if the lines have opposite directions
+      if (abs(slope1 - slope2) > opposite_threshold) {
+      #opposite
+        diagonal <- st_cast(c(line1[[1]], line2[[1]]), "LINESTRING") #mapview(line1, col.region = "red") + mapview(line2) + mapview(diagonal)
+        slopeDiag <- calculate_slope(diagonal)
+        if (left_of(slopeDiag, slope1)){#honky dori
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line1_index, "StartToEnd")
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line2_index, "StartToEnd")
+        } else {#running in opposite directions, both wrong
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line1_index, "EndToStart")
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line2_index, "EndToStart")
+        }
+      } else {
+        #running parallel
+        #close enough
+        diagonal <- st_cast(c(line1[[1]], line2[[2]]), "LINESTRING")
+        slopeDiag <- calculate_slope(diagonal)
+        if (left_of(slopeDiag, slope1)){#running in parallel directions, one wrong
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line1_index, "EndToStart")
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line2_index, "StartToEnd")
+        } else {
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line1_index, "StartToEnd")
+          opposite_direction_indices[[length(opposite_direction_indices) + 1]] <-
+            c(line2_index, "EndToStart")
+        }
+      }
+    }
+  }
+}
+
+#convert list into number/string dataframe
+OneWayDirections <- data.frame(
+  indexLine = sapply(opposite_direction_indices, function(x) {as.numeric(x[1])}),
+  lineDirection = sapply(opposite_direction_indices, function(x) {x[2]})
+) 
+
+OneWayDirections$WVK_ID <- ParWays$WVK_ID[OneWayDirections$indexLine]
+OneWay$Direct[match(OneWayDirections$WVK_ID, OneWay$WVK_ID)] <- OneWayDirections$lineDirection
+#Other oneWays random? or two-way? For now two-way; delete the from OnwWay
+OneWay <- OneWay[OneWay$Direct> "",]
+
+table(OneWay$Direct)
+
+```
+
+### The graph of road segments
+The graph is defined by a two column matrix of pairs of vertices, the edges of the graph. The matrix is the combination of 1) one way segments 2) other segments for their start to end and  3) from their end to start.
+
+```{r}
+EdgesOneWay <- rbind(as.matrix(OneWay[OneWay$Direct == "StartToEnd", c("startPoint", "endPoint", "WVK_ID"), drop = T]),
+                 as.matrix(OneWay[OneWay$Direct == "EndToStart", c("endPoint", "startPoint", "WVK_ID"), drop = T]))
+
+BothWays <- WegVKUtreVel[!WegVKUtreVel$WVK_ID %in% OneWay$WVK_ID,]
+
+EdgesBothWay <- rbind(as.matrix(BothWays[,c("startPoint", "endPoint", "WVK_ID"), drop = T]),
+                      as.matrix(BothWays[,c("endPoint", "startPoint", "WVK_ID"), drop = T]))
+
+TheEdges <- rbind(EdgesOneWay, EdgesBothWay)
+
+```
+
+### Preparing the shortestpath algoritm
+
+The algorithm to find a route needs a "weight" for the edges. To find the fastest route we use the divition of the length of each road segment by a rough speed estimate. The estimation is by maximum speed, the only data for speed we have available. This data needs some cleaning and some assumptions to translate the maximum speed to the average.
+Creating the graph is now a single function.
+
+```{r}
+mxSpeedUtrVel <- readRDS("../data/mxSpeedUtrVel.RDS")
+spd <- mxSpeedUtrVel[,c("WVK_ID", "MAXSHD")] 
+#we can free some memory...
+rm(mxSpeedUtrVel)
+spd$MAXSHD <- as.numeric(spd$MAXSHD)
+spd$MAXSHD[is.na(spd$MAXSHD)] <- 20 #plausible?
+spd$MAXSHD <- as.numeric(spd$MAXSHD - 5) #plausible for average?
+spd$weight <- as.numeric(st_length(WegVKUtreVel)[match(spd$WVK_ID, WegVKUtreVel$WVK_ID)] / spd$MAXSHD)
+spd$weight[is.infinite(spd$weight)] <- 10 #other suggestions?
+TheEdges <- merge(TheEdges, spd[,c("WVK_ID", "weight")])
+TheEdges$weight[TheEdges$weight <= 0] <- max(TheEdges$weight)
+# and create
+allEdges <- graph_from_data_frame(TheEdges[,c("startPoint", "endPoint", "weight")], directed = TRUE)
+
+```
+
+### Generate routes
+StartToEnd and EndToStart are converted to a number for reasons of speed.
+Begin and endpoints are randomly drawn as pairs; a shortest route is found, and for each edge the WVK_ID is found together with the information whether the road segment is travelled from start to end point or vice versa. This part is time consuming, like a few hours on a regular computer; You may have saved the listRoutes and run the next chunk fast by restoring it using by leaving redo to the default FALSE
+
+```{r}
+StartToEnd = 1
+EndToStart = 2
+
+redo <- FALSE
+
+if (redo) {
+
+  pairs <- data.frame(
+    beg = sample(1:length(V(allEdges)), size = 15000),
+    end = sample(1:length(V(allEdges)), size = 15000)
+  )
+  pairs <- pairs[pairs$beg != pairs$end,] #what are the odds
+
+  listRoutes <- lapply(1:nrow(pairs), function(j) { #j=1
+    WVKdir <- list()
+    route <- suppressWarnings(shortest_paths(
+      allEdges,
+      from = pairs[j,1],
+      to = pairs[j,2]
+    ))
+    routeEdges <- names(unlist(route$vpath))
+    if (!is.null(routeEdges)) {#some failure...
+      for (i in 2:length(routeEdges)) { #i=2
+        #find WVK 
+        Wg <- which(startPntsPID == routeEdges[i-1] & endPntsPID == routeEdges[i])
+        if (length(Wg) == 1) {
+          WVKdir[[length(WVKdir)+1]] <- c(WegVKUtreVel$WVK_ID[Wg], StartToEnd)
+        } else {
+          Wg <- which(endPntsPID == routeEdges[i-1] & startPntsPID == routeEdges[i])
+          if(length(Wg)==1){
+            WVKdir[[length(WVKdir)+1]] <- c(WegVKUtreVel$WVK_ID[Wg], EndToStart)
+          }
+        }
+      }
+      do.call(rbind, WVKdir)
+    }
+  })
+  saveRDS(listRoutes, file = "../data/listRoutes.RDS")
+} else {
+  listRoutes = readRDS("../data/listRoutes.RDS")
+}
+
+#some routes fail (return NULL); remove those
+listRoutes <- listRoutes[!sapply(listRoutes, is.null)]
+#view and check if desired
+#mapview(WegVKUtreVel[ WegVKUtreVel$WVK_ID %in% listRoutes[[1]][,1] ,])
+
+```
+### Obtain turn frequency
+We take the connections from the routes, and deduct from the difference in slope if it was a turn or a continuation in the same direction. We will use the function below:
+
+```{r}
+#function returns the slopes of the first and last segment
+#for going StartToEnd and EndToStart
+startEnd_slopes <- function(line) {
+  # into x, y vectors
+  xV <- line[,"X"]
+  yV <- line[,"Y"]
+  Pnts <- length(xV)
+  firstSTE <- NormSlope(xV[2] - xV[1], yV[2] - yV[1])
+  lastSTE <- NormSlope(xV[Pnts] - xV[Pnts-1], yV[Pnts] - yV[Pnts-1])
+  firstETS <- NormSlope(xV[Pnts-1] - xV[Pnts], yV[Pnts-1] - yV[Pnts])
+  lastETS <- NormSlope(xV[1] - xV[2], yV[1] - yV[2])
+  return(c(firstSTE = firstSTE, lastSTE = lastSTE, firstETS = firstETS, lastETS = lastETS))
+}
+
+#angle of rotation going from slope1 to slope2
+corner <- function(slope1, slope2){
+  slope1 <- (slope1 + pi) %% (2*pi) - pi
+  slope2 <- (slope2 + pi) %% (2*pi) - pi
+  return((slope1 - slope2 + pi) %% (2*pi) - pi)
+}
+
+```
+With these we make a table of connections and the changes of direction.
+```{r}
+stEndSlopes <- as.data.frame(t(
+    sapply(1:nrow(WegVKUtreVel), function(i){
+    startEnd_slopes(st_coordinates(st_geometry(WegVKUtreVel[i,])
+  ))
+}))) 
+stEndSlopes$WVK_ID = WegVKUtreVel$WVK_ID
+
+perRoute <- lapply(listRoutes, function(x) {# x = listRoutes[[1]]
+  sapply(2:nrow(x), function(i){ #i = 2
+    col1 <- ifelse(x[i-1,2] == StartToEnd, "lastSTE", "lastETS")
+    col2 <- ifelse(x[i,2] == StartToEnd, "firstSTE", "firstETS")
+    WVK_ID1 <- x[i-1,1]
+    WVK_ID2 <- x[i,1]
+    slope1 <- stEndSlopes[stEndSlopes$WVK_ID == WVK_ID1, col1]
+    slope2 <- stEndSlopes[stEndSlopes$WVK_ID == WVK_ID2, col2]
+    return(corner(slope1, slope2))
+  })
+})
+
+# for speed: saveRDS(perRoute, file = "data/perRoute.RDS")
+allAngles <- unlist(perRoute)
+appxpdf <- ecdf(allAngles)
+bins <- cut(allAngles, breaks = 7)
+tablBins <- table(bins)
+straight <- tablBins[which.max(tablBins)]
+propStraigh = straight / length(allAngles)
+circular::rose.diag(allAngles, zero = pi/2, template = "geographics", cex = 0.01, main = paste("prob straight =", round(100*propStraigh), "%"))# template = "geographics",
+```
