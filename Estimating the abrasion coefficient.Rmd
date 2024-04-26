@@ -19,7 +19,7 @@ Then the following calculations are performed:
 ```{r data}
 library(tidyverse)
 source("R/Base functions.R")
-local_path <- "data/TWP emission data_IDIADA_v01.xlsx"
+local_path <- "data/TWP emission data_IDIADA_v03.xlsx"
 
 n.Runs = 1000 # for clearly uncertrain variables, amount of values to use
 
