@@ -384,6 +384,7 @@ FWtotals <-
   group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
   unnest(FricWork_p_sector) #get the uncertainty runs to the tibble for summarise
 
+
 length(FWtotals$Track)
 FWtotals <- FWtotals |>  mutate(RUN = rep(1:1000)) # give code to each run
 
@@ -393,6 +394,8 @@ FWtotals <-
   summarise(sector_count = n(),
             PartFrictionWork = sum(FricWork_p_sector)) |> # sum up all friction work per test section(for maneuvers?) (e.g. rural 60 kph)
   mutate(SectionFrictionWork = PartFrictionWork *`Number of laps`) # multiple test section with number of laps to get total FW per test per section
+
+# write.csv(FWtotals, "FWtotals2.csv")
 
 FWtotals <-
   FWtotals |>  ungroup() |> 
@@ -489,6 +492,8 @@ CombinedFW_TW <-
   mutate(AbrasionCoeff = Abrasion_mg_km / FW_p_km) |> # Calculate the abrasion coefficient
   mutate(TestScenName = paste(Tyre_brand, Scenario, sep = "-"))
 
+
+
 # figure of tyre fricction work
 
 ```
@@ -523,8 +528,6 @@ ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),
        width = 12, height = 6)
 
 
-plot
-
 # Figure of abrasion measurements per tyre type tested
 plotdata <- CombinedFW_TW |> 
   filter( Scenario == "Standard") |> ungroup() |> 
@@ -533,6 +536,16 @@ plotdata <- CombinedFW_TW |>
             n=n(),
             sd=sd(Abrasion_mg_km))
 
+plotdata |> ungroup() |> 
+  group_by(Scenario , AbrasionTest , `Vehicle type`) |> 
+  summarise(            min = min(Abrasion_mg_km),
+                        p5 = quantile(Abrasion_mg_km, probs=0.05),
+                        AvgAbrasion_mg_km = mean(Abrasion_mg_km),
+                        p50 = quantile(Abrasion_mg_km, probs=0.5),
+                        p95 = quantile(Abrasion_mg_km, probs=0.95),
+                        max = max(Abrasion_mg_km),
+                        
+                        n_abr = n())
 ggplot(plotdata, 
        aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
   geom_boxplot() + 
@@ -552,7 +565,7 @@ ACplot1 <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"),
   geom_boxplot() +
   geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
              position = position_jitterdodge(jitter.width = 0.05,
-                                                                         dodge.width = 0.75))+
+                                             dodge.width = 0.75))+
   labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
   
   plot_theme 
@@ -622,7 +635,7 @@ ACplot1 <- ggplot(CombinedFW_TW,
   geom_boxplot() +
   geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
              position = position_jitterdodge(jitter.width = 0.05,
-                                                                         dodge.width = 0.75))+
+                                             dodge.width = 0.75))+
   labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
   
   plot_theme 
