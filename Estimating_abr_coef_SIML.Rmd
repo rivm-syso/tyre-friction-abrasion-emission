@@ -189,16 +189,16 @@ unique(CombinedFW_TW$AbrasionTest)
 
 kData25 <-  CombinedFW_TW |> filter(AbrasionTest != "Run-in" & Scenario == "Standard") 
 
-str(kData25)
+# str(kData25)
 
 ```
 
 
 ```{r figures standard scenarios}
 plot_theme = theme(
-  axis.title.x = element_text(size = 10),
-  axis.text = element_text(size = 8), 
-  axis.title.y = element_text(size = 10),
+  axis.title.x = element_text(size = 16),
+  axis.text = element_text(size = 14), 
+  axis.title.y = element_text(size = 16),
   plot.background = element_rect(fill = 'white'),
   panel.background = element_rect(fill = 'white'),
   panel.grid.major = element_blank(),
@@ -211,26 +211,26 @@ plot_theme = theme(
 kData25
 
 FW_plot <- ggplot(kData25, 
-                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(AbrasionTest, FW_p_km))) +
+                  aes(x = reorder(AbrasionTest,FW_p_km), y = FW_p_km/1000, fill=reorder(AbrasionTest, FW_p_km))) +
   geom_violin()+
-  # theme(legend.position="none")+
+  theme(legend.position="none")+
   # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
-  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
+  labs(x = "Abrasion test scenario", y = "Friction Work (J/m)") +                   # Adjust labels
   # coord_flip() +
   plot_theme +
   labs(fill = "Tyre")
 FW_plot
 
 ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre_5x5",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+       width = 5, height = 5)
 
 
 # Figure of abrasion measurements per tyre type tested
 plotdata <- CombinedFW_TW |> 
   filter( Scenario == "Standard") |> ungroup() |> 
   group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |>   summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
-            n=n(),
-            sd=sd(Abrasion_mg_km))
+                                                                                                    n=n(),
+                                                                                                    sd=sd(Abrasion_mg_km))
 
 plotdata |> ungroup() |> 
   group_by(Scenario , AbrasionTest , `Vehicle type`) |> 
@@ -246,124 +246,123 @@ ggplot(kData25,
        aes(x = reorder(AbrasionTest, Abrasion_mg_km), y = Abrasion_mg_km, fill = AbrasionTest ) ) +
   geom_violin() + theme(legend.position="none")+
   # geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
-             # position = position_jitterdodge(jitter.width = 0.1,
-                                             # dodge.width = 0.75))+
+  # position = position_jitterdodge(jitter.width = 0.1,
+  # dodge.width = 0.75))+
   labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)") +                   # Adjust labels
   
   plot_theme 
 
 ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre_5x5",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+       width = 5, height = 5)
 
+kData25_2 <- kData25 |> 
+  mutate(AbrasionTest = factor(AbrasionTest, levels = c("Rural", "Motorway", "Urban")))
 
-ACplot1 <- ggplot(kData25, 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff,fill = AbrasionTest )) +
+ACplot1 <- ggplot(kData25_2, 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff*1000,fill = AbrasionTest )) +
   geom_violin() +theme(legend.position="none")+
   # geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
-             # position = position_jitterdodge(jitter.width = 0.05,
-                                             # dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)") +                   # Adjust labels
+  # position = position_jitterdodge(jitter.width = 0.05,
+  # dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/kJ)") +                   # Adjust labels
   
   plot_theme 
 ACplot1
 
 ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre_5x5",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+       width = 5, height = 5)
 
 
 # Normalized_motorway <- 
-  FWtotals |>ungroup() |>  distinct(AbrasionTest)
+FWtotals |>ungroup() |>  distinct(AbrasionTest)
 Normalized_motorway <-
   FWtotals |>ungroup() |>  filter(AbrasionTest == "Motorway_SIML"&Scenario == "Standard") |> rename(Normalized_FW_p_km = FW_p_km) |> select(Tyre_brand, `Vehicle type`,Scenario,Normalized_FW_p_km) |> mutate(RUN = rep.int(rep(1:n.Runs),5))
 
 Normalized_motorway2 <-
   kData25 |> filter(AbrasionTest == "Motorway") |> 
   left_join(Normalized_motorway) |> 
-  mutate(MotorWayEF_mgkm = Normalized_FW_p_km*AbrasionCoeff)
+  mutate(MotorWayEF_mgkm = Normalized_FW_p_km*AbrasionCoeff) |> 
+  mutate(AbrasionTest = "Motorway sim")
 
 Normalized_motorway2 |> ungroup() |> distinct(`Vehicle type`)
-  
-  ACplot2 <- ggplot(Normalized_motorway2, 
+
+ACplot2 <- ggplot(Normalized_motorway2, 
                   aes(x = reorder(Tyre_brand,MotorWayEF_mgkm), y = MotorWayEF_mgkm ,fill = Tyre_brand)) +
-  geom_violin() +
+  geom_violin() +theme(legend.position="none") +
   # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
   #                                                                      dodge.width = 0.75))+
   labs(x = "Abrasion test scenario", y = "Abrasion Rate (mg/km)") +                   # Adjust labels
   
   plot_theme 
 ACplot2
-ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+ggsave(paste0("figures/EmissionFactor_sim_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 5, height = 5)
 
 ```
 
 
-```{r figures all scenarios}
+### ADAC
+Add Abrasion data from ADAC
 
-####### Figures with all scenario's ########
+```{r ADAC}
 
-FW_plot <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(TestScenName, FW_p_km))) +
-  geom_violin()+
-  # theme(legend.position="none")+
-  # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
-  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
-  # coord_flip() +
-  plot_theme +
-  labs(fill = "Tyre")
-FW_plot
+ADAC_wear <- readxl::read_excel(path = local_path, sheet = "Abrasion_ADAC")
 
-ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+Normalized_motorway3 <-
+  ADAC_wear |> mutate(AbrasionTest = "ADAC") |> 
+  rename(
+    MotorWayEF_mgkm = `Abrasion rate (mg/km)`,
+    Tyre_brand = Tyre
+  ) |> full_join(Normalized_motorway2)
 
 
-plot
-
-# Figure of abrasion measurements per tyre type tested
-plotdata <- CombinedFW_TW |>  ungroup() |> 
-  group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |> 
-  summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
-            n=n(),
-            sd=sd(Abrasion_mg_km))
-
-ggplot(plotdata, 
-       aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
-  geom_boxplot() + 
-  geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
-             position = position_jitterdodge(jitter.width = 0.1,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+plot <- ggplot(Normalized_motorway3, 
+               aes(x = reorder(AbrasionTest,MotorWayEF_mgkm), y = MotorWayEF_mgkm ,fill = AbrasionTest)) +
+  geom_violin() + theme(legend.position="none") +
+  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
+  #                                                                      dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Rate (mg/km)") +                   # Adjust labels
   
   plot_theme 
+plot
+ggsave(paste0("figures/EmissionFactor_sim_ADAC",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 4, height = 5)
 
-ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+```
+
+#Celik data
+
+```{r celik}
+
+Celik_AC <- readxl::read_excel(path = local_path, sheet = "Cenek et al. 1997")
+# kData25
+
+Celik_AC <-
+  Celik_AC |> rename(
+    AbrasionCoeff = `abrasion coefficient (g / MJ)`
+  ) |> mutate(AbrasionCoeff = AbrasionCoeff/1000,
+              AbrasionTest = "Celik_1997", .keep = "used") |> 
+  full_join(kData25) |> 
+  mutate(AbrasionTest = factor(AbrasionTest, levels = c("Rural", "Motorway", "Urban","Celik_1997")))
 
 
-ACplot1 <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
-             position = position_jitterdodge(jitter.width = 0.05,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
+
+ACplot1 <- ggplot(Celik_AC, 
+                  aes(x = c(AbrasionTest), y = AbrasionCoeff*1000,fill = AbrasionTest )) +
+  geom_violin() +theme(legend.position="none")+
+  # geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
+  # position = position_jitterdodge(jitter.width = 0.05,
+  # dodge.width = 0.75))+
+  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/kJ)") +                   # Adjust labels
   
   plot_theme 
 ACplot1
-ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
 
-ACplot2 <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
-  #                                                                      dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-ACplot2
-ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+ggsave(paste0("figures/AbrasionCoef_celik_5x5",format(Sys.time(),'%Y%m%d'),".png"),
+       width = 6, height = 5)
+
+
 
 ```
+
 

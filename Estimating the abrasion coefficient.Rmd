@@ -501,9 +501,9 @@ CombinedFW_TW <-
 
 ```{r figures standard scenarios}
 plot_theme = theme(
-  axis.title.x = element_text(size = 10),
-  axis.text = element_text(size = 8), 
-  axis.title.y = element_text(size = 10),
+  axis.title.x = element_text(size = 16),
+  axis.text = element_text(size = 14), 
+  axis.title.y = element_text(size = 16),
   plot.background = element_rect(fill = 'white'),
   panel.background = element_rect(fill = 'white'),
   panel.grid.major = element_blank(),
