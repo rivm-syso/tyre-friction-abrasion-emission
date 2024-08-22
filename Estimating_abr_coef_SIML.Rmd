@@ -1,6 +1,6 @@
 ---
 title: "Estimating the abrasion coefficient"
-author: "Joris T.K. Quik"
+author: "Joris T.K. Quik & J. Meesters"
 output: md_document
 editor_options: 
   chunk_output_type: console
@@ -16,7 +16,7 @@ Then the following calculations are performed:
 5. Calculate the Abrasion Coefficient
 
 ## 1. Data prepartion
-```{r data}
+```{r data_Force_Slip_calculations}
 library(tidyverse)
 source("R/Base functions.R")
 local_path <- "data/TWP emission data_IDIADA_v01_andSIML.xlsx"
@@ -27,7 +27,7 @@ source("R/SIML_dataprep.R")
 source("R/SIML_force.R")
 source("R/SIML_slip.R")
 
-AllData[1921,"Underground"]
+# AllData[1921,"Underground"]
 
 ### friction work ###
 AllData_fw <- 
@@ -330,7 +330,7 @@ ggsave(paste0("figures/EmissionFactor_sim_ADAC",format(Sys.time(),'%Y%m%d'),".pn
 
 ```
 
-#Celik data
+### Celik data
 
 ```{r celik}
 
