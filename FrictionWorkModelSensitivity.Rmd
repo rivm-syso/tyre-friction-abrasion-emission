@@ -19,22 +19,44 @@ Then the following calculations are performed:
 ```{r data}
 library(tidyverse)
 source("R/Base functions.R")
-local_path <- "data/TWP emission data_IDIADA_v01.xlsx"
+local_path <- "data/TWP emission data_IDIADA_v01_andSIML.xlsx"
 
 n.Runs = 1000 # for clearly uncertrain variables, amount of values to use
-
+set.seed = (120847)
 Maneuver_data <- readxl::read_excel(path = local_path, sheet = "Maneuver data")
 
 AllData <- 
   Maneuver_data |> 
   full_join(readxl::read_excel(path = local_path, sheet = "Sector data")) |> 
-  cross_join(readxl::read_excel(path = local_path, sheet = "Vehicle data")) |> 
-  full_join(readxl::read_excel(path = local_path, sheet = "Tyre_data"),relationship = "many-to-many") |> 
+  # cross_join(readxl::read_excel(path = local_path, sheet = "Vehicle data")) |> 
+  # full_join(readxl::read_excel(path = local_path, sheet = "Tyre_data"),relationship = "many-to-many") |> 
   full_join(readxl::read_excel(path = local_path, sheet = "Test data"))
 
 Constants <- readxl::read_excel(path = local_path, sheet = "Constants")
 # str(AllData)
 # AllData$Vehicle_class
+
+Vehicle_Class_override = "C1"
+
+min_mass_vehicle = 900
+max_mass_vehicle = 3000
+min_A_vehicle = 2
+max_A_vehicle = 4
+min_c_drag_vehicle = 0.02
+max_c_drag_vehicle = 0.5
+min_v_wind = -5
+max_v_wind = 5
+min_grade_slope = -10
+max_grade_slope = 10
+min_bank_slope = -1
+max_bank_slope = 1
+
+## for sensitivity only include 1 set of data for Tyre, Test and Vehicle data
+AllData <-
+  AllData |> 
+  # distinct(`Test section`)
+  filter(`Test section` == "Motorway_SIML") |> 
+  select(-`Top speed (m/s)`)
 
 Tyre_Label_table_fuelEff =    readxl::read_excel(
   "data/Tyre_conversion.xlsx", 
@@ -51,25 +73,25 @@ AllData <-
   mutate(
     RolCoef_min =  fRolCoef_Tlabel(
       Label_fuelleff =
-        `Fuel efficiency class`,
-      Vehicle_class = Vehicle_class,
+        "A",
+      Vehicle_class =  Vehicle_Class_override,
       Tyre_Label_table =
         Tyre_Label_table_fuelEff
     )$min,
     RolCoef_max = fRolCoef_Tlabel(
       Label_fuelleff =
-        `Fuel efficiency class`,
-      Vehicle_class = Vehicle_class,
+        "D",
+      Vehicle_class = Vehicle_Class_override,
       Tyre_Label_table = Tyre_Label_table_fuelEff
     )$max,
     GripIndex_min  = fGripIndex_Tlabel(
-      Label_wetgrip = `Wet grip class`,
-      Vehicle_class = Vehicle_class,
+      Label_wetgrip = "D",
+      Vehicle_class = Vehicle_Class_override,
       Tyre_Label_table = Tyre_Label_table_wetgrip
     )$min,
     GripIndex_max = fGripIndex_Tlabel(
-      Label_wetgrip = `Wet grip class`,
-      Vehicle_class = Vehicle_class,
+      Label_wetgrip =  "A",
+      Vehicle_class =  Vehicle_Class_override,
       Tyre_Label_table = Tyre_Label_table_wetgrip
     )$max
   )
@@ -124,9 +146,57 @@ AllData <-
       )
   )
 
+min_topspeed = 90 / 3.6
+max_topspeed = 130 / 3.6
+min_lowspeed = 0
+max_lowspeed = 89 / 3.6
+min_constspeed = 60 / 3.6
+AllData |> 
+  mutate(
+    `Mass (kg)` = list(runif(n.Runs, min_mass_vehicle, max_mass_vehicle)),
+    `Aero_drag_coef (-)` = list(runif(n.Runs, min_c_drag_vehicle, max_c_drag_vehicle)),
+    `Surface_Area (m2)` = list(runif(n.Runs, min_A_vehicle, max_A_vehicle)),
+    `Start speed (m/s)` = switch(
+      `Maneuver code`,
+      "Deceleration" = list(
+        runif(n.Runs, min_topspeed, max_topspeed)),
+      "Acceleration" = list(
+        runif(n.Runs, min_lowspeed, max_lowspeed)
+      ),
+      "Constant" = list(
+        runif(n.Runs, min_constspeed, max_topspeed)
+      )
+    ),
+    `End speed (m/s)` = switch(
+      `Maneuver code`,
+      "Deceleration" = list(
+        runif(n.Runs, min_lowspeed, max_lowspeed)
+      ),
+      "Acceleration" = list(
+        runif(n.Runs, min_topspeed, max_topspeed)
+      ),
+      "Constant" = list(
+        runif(n.Runs, min_constspeed, max_topspeed)
+      )
+    ),
+    `Acceleration constant (m.s^-2)`
+    `Deceleration constant (m.s^-2)`
+  )
 
-### end data prep ###
 
+# 't_0_100kmh' = runif(n=n_runs,8,20),
+#Vehicle mass in kg
+
+
+# 'p_min_acc' = 10/100 # minimum % of the maximum acceleration constant at which the driver feels comfortable
+# 'p_max_acc' = 100/100 # maximum % of the maximum acceleration constant at which the driver feels comfortable
+
+#Comfortable deceleration constant
+# 'c_decel_comfort' = runif(n=n_runs,2,3)
+
+# 'r_corner' = runif(n=n_runs,10,50)
+# corner angle in degrees
+# 'angle_corner' = runif(n=n_runs,0,270)
 
 ```
 
@@ -135,7 +205,7 @@ AllData <-
 Longitutidal and Lattidunal forces are calculated
 
 ```{r force}
-AllData <-
+AllData <-  
   AllData |> mutate(
     ForceDecelLong =
       list(
