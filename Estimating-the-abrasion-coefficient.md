@@ -392,9 +392,10 @@ Longitutidal and Lattidunal forces are calculated
       group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
       unnest(FricWork_p_sector) #get the uncertainty runs to the tibble for summarise
 
+
     length(FWtotals$Track)
 
-    ## [1] 1440000
+    ## [1] 1920000
 
     FWtotals <- FWtotals |>  mutate(RUN = rep(1:1000)) # give code to each run
 
@@ -408,6 +409,8 @@ Longitutidal and Lattidunal forces are calculated
     ## `summarise()` has grouped output by 'AbrasionTest', 'Tyre_brand', 'Vehicle
     ## type', 'Scenario', 'Test section', 'RUN', 'Total distance (km)'. You can
     ## override using the `.groups` argument.
+
+    # write.csv(FWtotals, "FWtotals2.csv")
 
     FWtotals <-
       FWtotals |>  ungroup() |> 
@@ -524,9 +527,9 @@ Longitutidal and Lattidunal forces are calculated
     # figure of tyre fricction work
 
     plot_theme = theme(
-      axis.title.x = element_text(size = 10),
-      axis.text = element_text(size = 8), 
-      axis.title.y = element_text(size = 10),
+      axis.title.x = element_text(size = 16),
+      axis.text = element_text(size = 14), 
+      axis.title.y = element_text(size = 16),
       plot.background = element_rect(fill = 'white'),
       panel.background = element_rect(fill = 'white'),
       panel.grid.major = element_blank(),
@@ -553,10 +556,6 @@ Longitutidal and Lattidunal forces are calculated
            width = 12, height = 6)
 
 
-    plot
-
-![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-2.png)
-
     # Figure of abrasion measurements per tyre type tested
     plotdata <- CombinedFW_TW |> 
       filter( Scenario == "Standard") |> ungroup() |> 
@@ -568,6 +567,30 @@ Longitutidal and Lattidunal forces are calculated
     ## `summarise()` has grouped output by 'Tyre_brand', 'Scenario', 'Shift',
     ## 'AbrasionTest', 'Vehicle type'. You can override using the `.groups` argument.
 
+    plotdata |> ungroup() |> 
+      group_by(Scenario , AbrasionTest , `Vehicle type`) |> 
+      summarise(            min = min(Abrasion_mg_km),
+                            p5 = quantile(Abrasion_mg_km, probs=0.05),
+                            AvgAbrasion_mg_km = mean(Abrasion_mg_km),
+                            p50 = quantile(Abrasion_mg_km, probs=0.5),
+                            p95 = quantile(Abrasion_mg_km, probs=0.95),
+                            max = max(Abrasion_mg_km),
+                            
+                            n_abr = n())
+
+    ## `summarise()` has grouped output by 'Scenario', 'AbrasionTest'. You can
+    ## override using the `.groups` argument.
+
+    ## # A tibble: 4 × 10
+    ## # Groups:   Scenario, AbrasionTest [4]
+    ##   Scenario AbrasionTest `Vehicle type`   min    p5 AvgAbrasion_mg_km   p50   p95
+    ##   <chr>    <chr>        <chr>          <dbl> <dbl>             <dbl> <dbl> <dbl>
+    ## 1 Standard Motorway     Esccape Kuga    343.  377.              545.  545.  820.
+    ## 2 Standard Run-in       Esccape Kuga    122.  124.              198.  206.  267.
+    ## 3 Standard Rural        Esccape Kuga    251.  269.              360.  345.  467.
+    ## 4 Standard Urban        Esccape Kuga    711.  842.             1503. 1415. 2166.
+    ## # ℹ 2 more variables: max <dbl>, n_abr <int>
+
     ggplot(plotdata, 
            aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
       geom_boxplot() + 
@@ -578,7 +601,7 @@ Longitutidal and Lattidunal forces are calculated
       
       plot_theme 
 
-![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-3.png)
+![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-2.png)
 
     ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
            width = 12, height = 6)
@@ -589,13 +612,13 @@ Longitutidal and Lattidunal forces are calculated
       geom_boxplot() +
       geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
                  position = position_jitterdodge(jitter.width = 0.05,
-                                                                             dodge.width = 0.75))+
+                                                 dodge.width = 0.75))+
       labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
       
       plot_theme 
     ACplot1
 
-![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-4.png)
+![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-3.png)
 
     ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
            width = 12, height = 6)
@@ -610,7 +633,7 @@ Longitutidal and Lattidunal forces are calculated
       plot_theme 
     ACplot2
 
-![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-5.png)
+![](Estimating-the-abrasion-coefficient_files/figure-markdown_strict/figures%20standard%20scenarios-4.png)
 
     ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
            width = 12, height = 6)
@@ -669,7 +692,7 @@ Longitutidal and Lattidunal forces are calculated
       geom_boxplot() +
       geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
                  position = position_jitterdodge(jitter.width = 0.05,
-                                                                             dodge.width = 0.75))+
+                                                 dodge.width = 0.75))+
       labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
       
       plot_theme 
