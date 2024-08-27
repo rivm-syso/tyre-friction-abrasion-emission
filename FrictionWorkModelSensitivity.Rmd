@@ -13,10 +13,10 @@ Then the following calculations are performed:
 2. Total Force at all the tyres together
 3. Total Slip at all tyres together
 4. Calculate total Friction Work for the relevant abrassion measurement
-5. Calculate the Abrasion Coefficient
+5. Perform Global Sensitivity Analysis
 
 ## 1. Data prepartion
-```{r data}
+```{r data,  echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 source("R/Base functions.R")
 local_path <- "data/TWP emission data_IDIADA_v01_andSIML.xlsx"
@@ -252,17 +252,17 @@ AllData <-
 ```
 
 
-```{r}
+```{r  echo=FALSE, message=FALSE, warning=FALSE}
 AllData <-
   AllData |> unnest(cols = where(is.list))
-
+head(AllData)
 ```
 
 
 ## 2. Total Force
 Longitutidal and Lattidunal forces are calculated
 
-```{r force}
+```{r force, echo=FALSE, message=FALSE, warning=FALSE}
 
 AllData <-
   AllData |> 
@@ -331,7 +331,7 @@ AllData <-
 
 ## 3. Total Slip
 
-```{r slip}
+```{r slip,  echo=FALSE, message=FALSE, warning=FALSE}
 # add slipt to the data:
 
 AllData <-
@@ -421,12 +421,13 @@ AllData <-
       )
   )
 
+head(AllData)
 
 ```
 
 ## 4. Total Friction Work
 
-```{r FrictionWork}
+```{r FrictionWork, echo=FALSE, message=FALSE, warning=FALSE}
 
 AllData_fw <- 
   AllData |> rowwise() |>  
@@ -535,13 +536,14 @@ GSA_helper <- function(Prob_X, Prob_Y, FrWrk_type){
   
 }
 
+head(TrackData_fw)
 
 
 ```
 
 
 ## 5. Global Sensitivity Analysis
-```{r}
+```{r  echo=FALSE, message=FALSE, warning=FALSE}
 library(sensitivity)
 library(ks)
 # test
