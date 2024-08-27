@@ -22,15 +22,11 @@ source("R/Base functions.R")
 local_path <- "data/TWP emission data_IDIADA_v01_andSIML.xlsx"
 
 n.Runs = 1000 # for clearly uncertrain variables, amount of values to use
-set.seed = (120847)
-Maneuver_data <- readxl::read_excel(path = local_path, sheet = "Maneuver data")
+# set.seed = (120847)
 
-AllData <- 
-  Maneuver_data |> 
-  full_join(readxl::read_excel(path = local_path, sheet = "Sector data")) |> 
-  # cross_join(readxl::read_excel(path = local_path, sheet = "Vehicle data")) |> 
-  # full_join(readxl::read_excel(path = local_path, sheet = "Tyre_data"),relationship = "many-to-many") |> 
-  full_join(readxl::read_excel(path = local_path, sheet = "Test data"))
+test_data <- readxl::read_excel(path = local_path, sheet = "Test data")
+
+
 
 Constants <- readxl::read_excel(path = local_path, sheet = "Constants")
 # str(AllData)
@@ -44,6 +40,7 @@ min_A_vehicle = 2
 max_A_vehicle = 4
 min_c_drag_vehicle = 0.02
 max_c_drag_vehicle = 0.5
+
 min_v_wind = -5
 max_v_wind = 5
 min_grade_slope = -10
@@ -51,12 +48,11 @@ max_grade_slope = 10
 min_bank_slope = -1
 max_bank_slope = 1
 
-## for sensitivity only include 1 set of data for Tyre, Test and Vehicle data
-AllData <-
-  AllData |> 
-  # distinct(`Test section`)
-  filter(`Test section` == "Motorway_SIML") |> 
-  select(-`Top speed (m/s)`)
+min_corn_radius = 500
+max_corn_radius = 1000
+min_corn_angle = 45
+max_corn_angle = 90
+
 
 Tyre_Label_table_fuelEff =    readxl::read_excel(
   "data/Tyre_conversion.xlsx", 
@@ -66,41 +62,49 @@ Tyre_Label_table_wetgrip =    readxl::read_excel(
   "data/Tyre_conversion.xlsx", 
   sheet = "Label wet grip class",
   skip=1)
+RolCoef_min =  fRolCoef_Tlabel(
+  Label_fuelleff =
+    "A",
+  Vehicle_class =  Vehicle_Class_override,
+  Tyre_Label_table =
+    Tyre_Label_table_fuelEff
+)$min
+RolCoef_max = fRolCoef_Tlabel(
+  Label_fuelleff =
+    "D",
+  Vehicle_class = Vehicle_Class_override,
+  Tyre_Label_table = Tyre_Label_table_fuelEff
+)$max
+GripIndex_min  = fGripIndex_Tlabel(
+  Label_wetgrip = "D",
+  Vehicle_class = Vehicle_Class_override,
+  Tyre_Label_table = Tyre_Label_table_wetgrip
+)$min
+GripIndex_max = fGripIndex_Tlabel(
+  Label_wetgrip =  "A",
+  Vehicle_class =  Vehicle_Class_override,
+  Tyre_Label_table = Tyre_Label_table_wetgrip
+)$max
+
+
+## for sensitivity only include 1 set of data for Tyre, Test and Vehicle data
+AllData <-
+  test_data |> 
+  # distinct(`Test section`)
+  filter(`Test section` == "Motorway_SIML")
 
 AllData <-
   AllData |> 
   rowwise() |>  
   mutate(
-    RolCoef_min =  fRolCoef_Tlabel(
-      Label_fuelleff =
-        "A",
-      Vehicle_class =  Vehicle_Class_override,
-      Tyre_Label_table =
-        Tyre_Label_table_fuelEff
-    )$min,
-    RolCoef_max = fRolCoef_Tlabel(
-      Label_fuelleff =
-        "D",
-      Vehicle_class = Vehicle_Class_override,
-      Tyre_Label_table = Tyre_Label_table_fuelEff
-    )$max,
-    GripIndex_min  = fGripIndex_Tlabel(
-      Label_wetgrip = "D",
-      Vehicle_class = Vehicle_Class_override,
-      Tyre_Label_table = Tyre_Label_table_wetgrip
-    )$min,
-    GripIndex_max = fGripIndex_Tlabel(
-      Label_wetgrip =  "A",
-      Vehicle_class =  Vehicle_Class_override,
-      Tyre_Label_table = Tyre_Label_table_wetgrip
-    )$max
+    
+    RolCoef_u = list(runif(n.Runs, RolCoef_min, RolCoef_max)),
+    GripIndex_u = list(runif(n.Runs, GripIndex_min, GripIndex_max)),
+    Underground = "Dry asphalt"
   )
 # create n.Runs number of Rol Coefficients based on uncertainty of tyre label rol coefficient classes
 AllData <-
   AllData |> mutate(
-    RolCoef_u = list(runif(n.Runs, RolCoef_min, RolCoef_max)),
-    GripIndex_u = list(runif(n.Runs, GripIndex_min, GripIndex_max)),
-    
     x_correct_mu_max_track_u =
       switch(
         Underground,
@@ -151,52 +155,106 @@ max_topspeed = 130 / 3.6
 min_lowspeed = 0
 max_lowspeed = 89 / 3.6
 min_constspeed = 60 / 3.6
-AllData |> 
+
+min_accconst = 0.1
+max_accconst = 1.6677
+min_decconst = 0.1
+max_decconst = 2.94
+
+AllData <- 
+  AllData |> 
   mutate(
+    RUNS = list(c(1:n.Runs)),
     `Mass (kg)` = list(runif(n.Runs, min_mass_vehicle, max_mass_vehicle)),
     `Aero_drag_coef (-)` = list(runif(n.Runs, min_c_drag_vehicle, max_c_drag_vehicle)),
     `Surface_Area (m2)` = list(runif(n.Runs, min_A_vehicle, max_A_vehicle)),
-    `Start speed (m/s)` = switch(
-      `Maneuver code`,
-      "Deceleration" = list(
-        runif(n.Runs, min_topspeed, max_topspeed)),
-      "Acceleration" = list(
-        runif(n.Runs, min_lowspeed, max_lowspeed)
-      ),
-      "Constant" = list(
-        runif(n.Runs, min_constspeed, max_topspeed)
-      )
+    `Longitudinal slope (%)` = list(runif(n.Runs,min_grade_slope,max_grade_slope)), 
+    `Latitudinal slope (%)` = list(runif(n.Runs,min_bank_slope,max_bank_slope)), 
+    # `Corner radius (m)` = list(runif(n.Runs,)),
+    # `Corner angle (degrees)` = list(runif(n.Runs,)),
+    v_wind = list(runif(n.Runs, min_v_wind, max_v_wind)),
+    m_rotate = list(runif(
+      n.Runs,
+      Constants |>
+        filter(Name == "min_rotating_fraction") |> pull(value),
+      Constants |>
+        filter(Name == "max_rotating_fraction") |> pull(value)
+    )
+    )
+  )
+
+AllData <- 
+  AllData |> 
+  mutate(
+    v_start_decel = list(
+      runif(n.Runs, min_topspeed, max_topspeed)),
+    v_end_decel =  list(
+      runif(n.Runs, min_lowspeed, max_lowspeed)
     ),
-    `End speed (m/s)` = switch(
-      `Maneuver code`,
-      "Deceleration" = list(
-        runif(n.Runs, min_lowspeed, max_lowspeed)
-      ),
-      "Acceleration" = list(
-        runif(n.Runs, min_topspeed, max_topspeed)
-      ),
-      "Constant" = list(
-        runif(n.Runs, min_constspeed, max_topspeed)
-      )
+    v_start_accel = list(
+      runif(n.Runs, min_lowspeed, max_lowspeed)
     ),
-    `Acceleration constant (m.s^-2)`
-    `Deceleration constant (m.s^-2)`
+    v_end_accel =  list(
+      runif(n.Runs, min_topspeed, max_topspeed)
+    ),
+    v_const = list(
+      runif(n.Runs, min_constspeed, max_topspeed)
+    ),
+    `Deceleration constant (m.s^-2)` = list(
+      runif(n.Runs, min_decconst, max_decconst)
+    ),
+    `Acceleration constant (m.s^-2)` = list(
+      runif(n.Runs, min_accconst, max_accconst)
+    )
+  )
+
+AllData <- 
+  AllData |> mutate(
+    `Corner radius (m)` =  list(runif(n.Runs,
+                                      min_corn_radius,
+                                      max_corn_radius)),
+    `Corner angle (degrees)` = list(runif(n.Runs,
+                                          min_corn_angle,
+                                          max_corn_angle))
   )
 
 
-# 't_0_100kmh' = runif(n=n_runs,8,20),
-#Vehicle mass in kg
+PROB_X <- AllData |> 
+  select(!c(`Section name`,
+            `Test section`, 
+            AbrasionTest,  
+            Track,               
+            `Number of laps`, 
+            `Total distance (km)`,
+            Underground))
 
 
-# 'p_min_acc' = 10/100 # minimum % of the maximum acceleration constant at which the driver feels comfortable
-# 'p_max_acc' = 100/100 # maximum % of the maximum acceleration constant at which the driver feels comfortable
+AllData <- 
+  AllData |> 
+  left_join(readxl::read_excel(path = local_path, sheet = "Sector data") |> select("Track","Sector number","Sector name") ) |> 
+  # cross_join(readxl::read_excel(path = local_path, sheet = "Vehicle data")) |> 
+  # full_join(readxl::read_excel(path = local_path, sheet = "Tyre_data"),relationship = "many-to-many") |> 
+  left_join(readxl::read_excel(path = local_path, sheet = "Maneuver data") |> select("Track","Sector number","Test section","Maneuver number", "Maneuver code","Maneuver repeats"))
 
-#Comfortable deceleration constant
-# 'c_decel_comfort' = runif(n=n_runs,2,3)
+AllData <-
+  AllData |> mutate(
+    `Sector Distance (m)` = 
+      switch(`Sector name`, 
+             "East BendSIML" = 
+               list(2*pi*`Corner radius (m)`*`Corner angle (degrees)`/360),
+             "North StraightSIML" = 
+               list(`Total distance (km)`*1000 - 
+                      2*pi*`Corner radius (m)`*`Corner angle (degrees)`/360)
+      )
+  )
 
-# 'r_corner' = runif(n=n_runs,10,50)
-# corner angle in degrees
-# 'angle_corner' = runif(n=n_runs,0,270)
+
+```
+
+
+```{r}
+AllData <-
+  AllData |> unnest(cols = where(is.list))
 
 ```
 
@@ -205,11 +263,15 @@ AllData |>
 Longitutidal and Lattidunal forces are calculated
 
 ```{r force}
-AllData <-  
-  AllData |> mutate(
-    ForceDecelLong =
-      list(
-        f_decel_long_force(
+
+AllData <-
+  AllData |> 
+  rowwise() |> # rowwise needed because there are ifstatements that do not work with vectors
+  mutate(
+    ForceLong =
+      switch(
+        `Maneuver code`,
+        "Deceleration" = f_decel_long_force(
           c_roll = RolCoef_u,
           m_vehicle = `Mass (kg)`,
           grav_constant = Constants |>
@@ -218,23 +280,13 @@ AllData <-
           A_vehicle = `Surface_Area (m2)`,
           rho_air = Constants |>
             filter(Name == "rho_air") |> pull(value),
-          v_start_decel = `Start speed (m/s)`,
-          v_end_decel = `End speed (m/s)`,
+          v_start_decel = v_start_decel,
+          v_end_decel = v_end_decel,
           v_wind = v_wind,
           alpha_slope = `Longitudinal slope (%)` / 100,
-          m_rotate = runif(
-            n.Runs,
-            Constants |>
-              filter(Name == "min_rotating_fraction") |> pull(value),
-            Constants |>
-              filter(Name == "max_rotating_fraction") |> pull(value)
-          ),
-          c_decel = `Deceleration constant (m.s^-2)`
-        )
-      ),
-    ForceAccelLong =
-      list(
-        f_accel_long_force(
+          m_rotate = m_rotate,
+          c_decel = `Deceleration constant (m.s^-2)`),
+        "Acceleration" =  f_accel_long_force(
           c_roll = RolCoef_u,
           m_vehicle = `Mass (kg)`,
           grav_constant = Constants |>
@@ -243,23 +295,13 @@ AllData <-
           A_vehicle = `Surface_Area (m2)`,
           rho_air = Constants |>
             filter(Name == "rho_air") |> pull(value),
-          v_start_accel = `Start speed (m/s)`,
-          v_end_accel = `End speed (m/s)`,
+          v_start_accel = v_start_accel,
+          v_end_accel = v_end_accel,
           v_wind = v_wind,
           alpha_slope = `Longitudinal slope (%)` / 100,
-          m_rotate = runif(
-            n.Runs,
-            Constants |>
-              filter(Name == "min_rotating_fraction") |> pull(value),
-            Constants |>
-              filter(Name == "max_rotating_fraction") |> pull(value)
-          ),
-          c_accel = `Acceleration constant (m.s^-2)`
-        )
-      ),
-    ForceConstLong =
-      list(
-        f_const_speed_long_force(
+          m_rotate = m_rotate,
+          c_accel = `Acceleration constant (m.s^-2)`),
+        "Constant" = f_const_speed_long_force(
           c_roll = RolCoef_u,
           m_vehicle = `Mass (kg)`,
           grav_constant = Constants |>
@@ -268,27 +310,20 @@ AllData <-
           A_vehicle = `Surface_Area (m2)`,
           rho_air = Constants |>
             filter(Name == "rho_air") |> pull(value),
-          v_vehicle = `End speed (m/s)`,
+          v_vehicle = v_const,
           v_wind = `v_wind`,
           alpha_slope = `Longitudinal slope (%)` /100)
       ),
-    ForceCornLatt_M =
-      list(
-        f_lat_force( m_vehicle = `Mass (kg)`,
-                     grav_constant = Constants |> 
-                       filter(Name == "grav_constant") |> pull(value),
-                     r_corner = `Corner radius (m)`,
-                     alpha_bank_slope = `Latitudinal slope (%)` / 100,
-                     v_vehicle = mean(`Start speed (m/s)`,`End speed (m/s)`)) 
-      ),
-    ForceCornLatt_C =
-      list(
-        f_lat_force( m_vehicle = `Mass (kg)`,
-                     grav_constant = Constants |> 
-                       filter(Name == "grav_constant") |> pull(value),
-                     r_corner = `Corner radius (m)`,
-                     alpha_bank_slope = `Latitudinal slope (%)` / 100,
-                     v_vehicle = `End speed (m/s)`) 
+    ForceLatt =
+      switch(`Sector name`, 
+             "East BendSIML" = 
+               f_lat_force( m_vehicle = `Mass (kg)`,
+                            grav_constant = Constants |> 
+                              filter(Name == "grav_constant") |> pull(value),
+                            r_corner = `Corner radius (m)`,
+                            alpha_bank_slope = `Latitudinal slope (%)` / 100,
+                            v_vehicle = v_const) ,
+             "North StraightSIML" = 0
       )
   )
 
@@ -300,122 +335,90 @@ AllData <-
 # add slipt to the data:
 
 AllData <-
-  AllData |> mutate(
-    SlipDecelLong =
-      list(
-        f_decel_long_slip(c_roll = RolCoef_u, 
-                          m_vehicle = `Mass (kg)`, 
+  AllData |> 
+  rowwise() |> 
+  mutate(
+    SlipLong =
+      switch (`Maneuver code`,
+              "Deceleration" =       
+                f_decel_long_slip(c_roll = RolCoef_u, 
+                                  m_vehicle = `Mass (kg)`, 
+                                  grav_constant = Constants |> 
+                                    filter(Name == "grav_constant") |> pull(value), 
+                                  c_drag = `Aero_drag_coef (-)`, 
+                                  A_vehicle = `Surface_Area (m2)`,
+                                  rho_air = Constants |> 
+                                    filter(Name == "rho_air") |> pull(value),
+                                  v_start_decel = v_start_decel, 
+                                  v_end_decel = v_end_decel, 
+                                  v_wind = `v_wind`,
+                                  alpha_slope = `Longitudinal slope (%)`/100, 
+                                  m_rotate = m_rotate, 
+                                  c_decel = `Deceleration constant (m.s^-2)`, 
+                                  optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
+                                  grip_index_tyre = GripIndex_u,
+                                  wet_mu_max_ref_tyre = Constants |>
+                                    filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
+                                  x_correct_mu_max_track = x_correct_mu_max_track_u,
+                                  c_brake_ref_tyre_wet = Constants |> 
+                                    filter(Name == "c_brake_ref_tyre_wet") |> pull(value)),
+              "Acceleration" =  
+                f_accel_long_slip(c_roll = RolCoef_u, 
+                                  m_vehicle = `Mass (kg)`, 
+                                  grav_constant = Constants |> 
+                                    filter(Name == "grav_constant") |> pull(value), 
+                                  c_drag = `Aero_drag_coef (-)`, 
+                                  A_vehicle = `Surface_Area (m2)`, 
+                                  rho_air = Constants |> 
+                                    filter(Name == "rho_air") |> pull(value),
+                                  v_start_accel = v_start_accel, 
+                                  v_end_accel = v_end_accel, 
+                                  v_wind = v_wind, 
+                                  alpha_slope = `Longitudinal slope (%)`/100, 
+                                  m_rotate = m_rotate, 
+                                  c_accel = `Acceleration constant (m.s^-2)`, 
+                                  optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
+                                  grip_index_tyre = GripIndex_u, 
+                                  wet_mu_max_ref_tyre = Constants |> 
+                                    filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
+                                  x_correct_mu_max_track = x_correct_mu_max_track_u),
+              "Constant" =       
+                f_const_speed_long_slip(c_roll = RolCoef_u, 
+                                        m_vehicle = `Mass (kg)`, 
+                                        m_rotate = m_rotate,
+                                        grav_constant = Constants |> 
+                                          filter(Name == "grav_constant") |> pull(value), 
+                                        c_drag = `Aero_drag_coef (-)`, 
+                                        A_vehicle = `Surface_Area (m2)`, 
+                                        rho_air = Constants |> 
+                                          filter(Name == "rho_air") |> pull(value), 
+                                        v_vehicle = v_const, 
+                                        v_wind = `v_wind`,
+                                        alpha_slope = `Longitudinal slope (%)`/100,
+                                        wet_mu_max_ref_tyre = Constants |> 
+                                          filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
+                                        optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
+                                        grip_index_tyre = GripIndex_u, 
+                                        c_brake_ref_tyre_wet = Constants |> 
+                                          filter(Name == "c_brake_ref_tyre_wet") |> pull(value), 
+                                        x_correct_mu_max_track = x_correct_mu_max_track_u)
+      ),
+    SlipLatt =
+      switch(`Sector name`, 
+             "East BendSIML" = 
+               f_lat_slip(m_vehicle = `Mass (kg)`, 
+                          v_vehicle = v_const, 
+                          r_corner = `Corner radius (m)`, 
                           grav_constant = Constants |> 
-                            filter(Name == "grav_constant") |> pull(value), 
-                          c_drag = `Aero_drag_coef (-)`, 
-                          A_vehicle = `Surface_Area (m2)`,
-                          rho_air = Constants |> 
-                            filter(Name == "rho_air") |> pull(value),
-                          v_start_decel = `Start speed (m/s)`, 
-                          v_end_decel = `End speed (m/s)`, 
-                          v_wind = `v_wind`,
-                          alpha_slope = `Longitudinal slope (%)`/100, 
-                          m_rotate = runif(n.Runs,
-                                           Constants |> 
-                                             filter(Name == "min_rotating_fraction") |> 
-                                             pull(value),
-                                           Constants |> 
-                                             filter(Name == "max_rotating_fraction") |> 
-                                             pull(value)), 
-                          c_decel = `Deceleration constant (m.s^-2)`, 
+                            filter(Name == "grav_constant") |> pull(value),
+                          alpha_bank_slope = `Latitudinal slope (%)`/100, 
                           optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
-                          grip_index_tyre = GripIndex_u,
-                          wet_mu_max_ref_tyre = Constants |>
-                            filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
-                          x_correct_mu_max_track = x_correct_mu_max_track_u,
-                          c_brake_ref_tyre_wet = Constants |> 
-                            filter(Name == "c_brake_ref_tyre_wet") |> pull(value)
-        ) 
-      ),
-    SlipAccelLong= list(
-      f_accel_long_slip(c_roll = RolCoef_u, 
-                        m_vehicle = `Mass (kg)`, 
-                        grav_constant = Constants |> 
-                          filter(Name == "grav_constant") |> pull(value), 
-                        c_drag = `Aero_drag_coef (-)`, 
-                        A_vehicle = `Surface_Area (m2)`, 
-                        rho_air = Constants |> 
-                          filter(Name == "rho_air") |> pull(value),
-                        v_start_accel = `Start speed (m/s)`, 
-                        v_end_accel = `End speed (m/s)`, 
-                        v_wind = v_wind, 
-                        alpha_slope = `Longitudinal slope (%)`/100, 
-                        m_rotate = runif(n.Runs,
-                                         Constants |> 
-                                           filter(Name == "min_rotating_fraction") |> 
-                                           pull(value),
-                                         Constants |> 
-                                           filter(Name == "max_rotating_fraction") |> 
-                                           pull(value)), 
-                        c_accel = `Acceleration constant (m.s^-2)`, 
-                        optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
-                        grip_index_tyre = GripIndex_u, 
-                        wet_mu_max_ref_tyre = Constants |> 
-                          filter(Name == "mu_max_ref_tyre_wet") |> pull(value),
-                        x_correct_mu_max_track = x_correct_mu_max_track_u)
-    ),
-    SlipConstLong = 
-      list(
-        f_const_speed_long_slip(c_roll = RolCoef_u, 
-                                m_vehicle = `Mass (kg)`, 
-                                m_rotate = runif(n.Runs,
-                                                 Constants |> 
-                                                   filter(Name == "min_rotating_fraction") |> 
-                                                   pull(value),
-                                                 Constants |> 
-                                                   filter(Name == "max_rotating_fraction") |> 
-                                                   pull(value)),
-                                grav_constant = Constants |> 
-                                  filter(Name == "grav_constant") |> pull(value), 
-                                c_drag = `Aero_drag_coef (-)`, 
-                                A_vehicle = `Surface_Area (m2)`, 
-                                rho_air = Constants |> 
-                                  filter(Name == "rho_air") |> pull(value), 
-                                v_vehicle = `End speed (m/s)`, 
-                                v_wind = `v_wind`,
-                                alpha_slope = `Longitudinal slope (%)`/100,
-                                wet_mu_max_ref_tyre = Constants |> 
-                                  filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
-                                optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
-                                grip_index_tyre = GripIndex_u, 
-                                c_brake_ref_tyre_wet = Constants |> 
-                                  filter(Name == "c_brake_ref_tyre_wet") |> pull(value), 
-                                x_correct_mu_max_track = x_correct_mu_max_track_u)
-      ),
-    SlipCornLatt_M =
-      list(
-        f_lat_slip(m_vehicle = `Mass (kg)`, 
-                   v_vehicle = mean(`Start speed (m/s)`,
-                                    `End speed (m/s)`), 
-                   r_corner = `Corner radius (m)`, 
-                   grav_constant = Constants |> 
-                     filter(Name == "grav_constant") |> pull(value),
-                   alpha_bank_slope = `Latitudinal slope (%)`/100, 
-                   optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
-                   grip_index_tyre = GripIndex_u, 
-                   wet_mu_max_ref_tyre = Constants |> 
-                     filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
-                   x_correct_mu_max_track = x_correct_mu_max_track_u)
-      ),
-    SlipCornLatt_C =
-      list(
-        f_lat_slip(m_vehicle = `Mass (kg)`, 
-                   v_vehicle = `End speed (m/s)`, 
-                   r_corner = `Corner radius (m)`, 
-                   grav_constant = Constants |> 
-                     filter(Name == "grav_constant") |> pull(value),
-                   alpha_bank_slope = `Latitudinal slope (%)`/100, 
-                   optimal_slip_ratio_tyre_track = optimal_slip_ratio_track_u,
-                   grip_index_tyre = GripIndex_u, 
-                   wet_mu_max_ref_tyre = Constants |> 
-                     filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
-                   x_correct_mu_max_track = x_correct_mu_max_track_u)
-      ) 
+                          grip_index_tyre = GripIndex_u, 
+                          wet_mu_max_ref_tyre = Constants |> 
+                            filter(Name == "mu_max_ref_tyre_wet") |> pull(value), 
+                          x_correct_mu_max_track = x_correct_mu_max_track_u),
+             "North StraightSIML" = 0
+      )
   )
 
 
@@ -424,306 +427,138 @@ AllData <-
 ## 4. Total Friction Work
 
 ```{r FrictionWork}
+
 AllData_fw <- 
-  AllData |> mutate(
-    DistanceManAccel =
-      f_accel_distance(v_start = `Start speed (m/s)`,
-                       v_end = `End speed (m/s)`,
-                       c_accel = `Acceleration constant (m.s^-2)`),
-    DistanceManDecel = 
-      f_decel_distance(v_start = `Start speed (m/s)`,
-                       v_end = `End speed (m/s)`,
-                       c_decel = `Deceleration constant (m.s^-2)`),
-    DistanceCorn = f_corner_distance(r_corner = `Corner radius (m)`,
-                                     corner_angle = `Corner angle (degrees)`),
-  )  |> mutate(DistanceConst = `Distance (m)`-
-                 DistanceManAccel*`Maneuver repeats` - 
-                 DistanceManDecel*`Maneuver repeats`,
-               FWAccelLong = list(ForceAccelLong*SlipAccelLong*DistanceManAccel*`Maneuver repeats`),
-               FWDecelLong = list(ForceDecelLong*SlipDecelLong*DistanceManDecel*`Maneuver repeats`),
-               FWConstLong = list(ForceConstLong*SlipConstLong*DistanceConst),
-               FWLat = list(
-                 SlipCornLatt_M*ForceCornLatt_M*(DistanceManAccel+DistanceManDecel) +
-                   SlipCornLatt_C*ForceCornLatt_C*DistanceConst),
-               FricWork_p_sector = list((FWAccelLong+FWDecelLong+FWConstLong+FWLat)) # calculate FW per sector
-               
+  AllData |> rowwise() |>  
+  mutate(
+    ManeuverDistance = switch(
+      `Maneuver code`,
+      "Deceleration" =     
+        f_decel_distance(v_start = v_start_decel,
+                         v_end = v_end_decel,
+                         c_decel = `Deceleration constant (m.s^-2)`),
+      "Acceleration" =
+        f_accel_distance(v_start = v_start_accel ,
+                         v_end = v_end_accel,
+                         c_accel = `Acceleration constant (m.s^-2)`),
+      "Constant" =  {switch(`Sector name`,
+                            "North StraightSIML" = 
+                              `Sector Distance (m)`-
+                              f_decel_distance(v_start = v_start_decel,
+                                               v_end = v_end_decel,
+                                               c_decel = `Deceleration constant (m.s^-2)`)-
+                              f_accel_distance(v_start = v_start_accel ,
+                                               v_end = v_end_accel,
+                                               c_accel = `Acceleration constant (m.s^-2)`),
+                            "East BendSIML"  = 
+                              `Sector Distance (m)`)
+      }),
+    FrictionWork_Man_Long = ForceLong*SlipLong*ManeuverDistance*`Maneuver repeats`,
+    FrictionWork_Man_Latt = ForceLatt*SlipLatt*ManeuverDistance*`Maneuver repeats`
   )
 
-FWtotals <-
+
+# Get bad runs:
+AllData_fw |> filter(ManeuverDistance < 0) # Runs where acceleration and/or deceleration takes longer than total distance are an artifact so should be removed
+
+bad_runs <- c(AllData_fw |> filter(ManeuverDistance < 0) |>  distinct(RUNS) |> pull(RUNS))
+AllData_fw <-
+  AllData_fw |> filter(!(RUNS %in% bad_runs))
+
+## FW per sector (Sum over maneuver number)
+AllData_fw |> distinct(`Sector name`)
+
+SectData_fw <- 
   AllData_fw |> ungroup() |> 
-  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Sector number`,`Maneuver number`,`Test section`) |> 
-  unnest(FricWork_p_sector) #get the uncertainty runs to the tibble for summarise
+  group_by(RUNS, `Sector name`,`Test section`) |> 
+  summarise(FrictionWork_sect_Long = sum(FrictionWork_Man_Long),
+            FrictionWork_sect_Latt = sum(FrictionWork_Man_Latt),
+            Distance_Sector = sum(ManeuverDistance)) |> 
+  mutate(
+    FrictionWork_sect_Long_pm = FrictionWork_sect_Long/Distance_Sector,
+    FrictionWork_sect_Latt_pm = FrictionWork_sect_Latt/Distance_Sector,
+    FrictionWork_sect_pm = (FrictionWork_sect_Long+FrictionWork_sect_Latt)/Distance_Sector
+  )
+
+## FW per test (sum over test number)
+TrackData_fw <- 
+  SectData_fw |> ungroup() |> 
+  group_by(RUNS, `Test section`) |> 
+  summarise(FrictionWork_Long = sum(FrictionWork_sect_Long),
+            FrictionWork_Latt = sum(FrictionWork_sect_Latt),
+            Distance_Track = sum(Distance_Sector)) |> 
+  mutate(
+    FrictionWork_Long_pm = FrictionWork_Long/Distance_Track,
+    FrictionWork_Latt_pm = FrictionWork_Latt/Distance_Track,
+    FrictionWork_pm = (FrictionWork_Long+FrictionWork_Latt)/Distance_Track,
+    FrictionWork_Latt_7x_pm = 7*FrictionWork_Latt/Distance_Track,
+    FrictionWork_7x_pm = (FrictionWork_Long+FrictionWork_Latt*7)/Distance_Track
+  )
 
 
-length(FWtotals$Track)
-FWtotals <- FWtotals |>  mutate(RUN = rep(1:1000)) # give code to each run
-
-FWtotals <-
-  FWtotals |> ungroup() |> 
-  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,`Test section`,RUN,`Total distance (km)`, `Number of laps`) |> 
-  summarise(sector_count = n(),
-            PartFrictionWork = sum(FricWork_p_sector)) |> # sum up all friction work per test section(for maneuvers?) (e.g. rural 60 kph)
-  mutate(SectionFrictionWork = PartFrictionWork *`Number of laps`) # multiple test section with number of laps to get total FW per test per section
-
-# write.csv(FWtotals, "FWtotals2.csv")
-
-FWtotals <-
-  FWtotals |>  ungroup() |> 
-  group_by(AbrasionTest,Tyre_brand,`Vehicle type`,Scenario,RUN) |> 
-  summarise(Section_count = n(),
-            TotFrictionWork = sum(SectionFrictionWork), # sum the test sections to get total FW for the whole arbasion test
-            Test_Distance_km = sum(`Total distance (km)`)) |> # sum up also the distance of each test section to get total distace driven in each test.
-  mutate(FW_p_km = TotFrictionWork/Test_Distance_km) # devide total FW per test by the distance driven per test
-
-library(ggplot2)
-
-plotdata <- FWtotals |> filter(Tyre_brand == "Dunlop" & Scenario == "Standard") # plot FW for each test (J per km)
-
-plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Tyre_brand )) +
-  geom_violin()
-plot+  scale_y_log10(labels = scales::number_format())
-# boxplot(FWtotals)
-
-plotdata <- FWtotals |> filter( Scenario == "Standard") # plot FW for each test (J per km)
-
-plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Tyre_brand )) +
-  geom_violin()
-plot+  scale_y_log10(labels = scales::number_format())
+# inputs
 
 
-plotdata <- FWtotals |> filter( Scenario == "High load"|Scenario == "Standard",Tyre_brand == "LingLong") # plot FW for each test (J per km)
+Prob_X <- 
+  PROB_X |> unnest(cols = where(is.list)) |> 
+  filter(!(RUNS %in% bad_runs)) 
 
-plot <- ggplot(plotdata, aes(x = c(AbrasionTest), y = FW_p_km, fill=Scenario )) +
-  geom_violin()
-plot+  scale_y_log10(labels = scales::number_format())
+# select(-RUNS) |> 
+#   mutate(across(everything(), ~log(.x+100)))
 
-### end of FW
+# Prob_Y <- TrackData_fw
 
-```
+# FrWrk_type = "FrictionWork_pm"
+## sens per test
 
-## 5. Abrasion Coefficient
-
-```{r abrasion coeff}
-
-# read in and prepare abrasion rate measurement data
-IDIADAwear <- readxl::read_excel(path = local_path, sheet = "Abrasion", skip = 9)
-
-#provide proper column names
-names(IDIADAwear)[c(1,2)] <- c("Tyre_brand","Wheel")
-
-# extend Tyre to all its rows
-for(i in 1:nrow(IDIADAwear)){
-  if(is.na(IDIADAwear$Tyre_brand[i])){
-    IDIADAwear$Tyre_brand[i] <- IDIADAwear$Tyre_brand[i-1]
-  }
+GSA_helper <- function(Prob_X, Prob_Y, FrWrk_type){
+  
+  probXY <- left_join(
+    Prob_Y |> select(all_of(FrWrk_type)) |> mutate(across(all_of(FrWrk_type), ~ na_if(.x, 0)))
+    # transform inputs by adding a constant and taking the logarithm
+    ,  Prob_X |> mutate(across(-RUNS, ~log(.x+100))))  |> 
+    # transform output taking logarithm
+    mutate( across(all_of(FrWrk_type),~  log(.x))) |> 
+    drop_na() |> ungroup() |> select(-RUNS)
+  
+  PROB_X= select(probXY,-any_of(FrWrk_type))
+  PROB_Y=  pull(probXY,all_of(FrWrk_type))
+  
+  m1 <- sensiFdiv(model = NULL, X=PROB_X, fdiv = "TV", nboot = 0, conf = 0.95, scale = TRUE)
+  tell(m1, y=PROB_Y, S)
+  
+  borg_df <- tibble(colnames(PROB_X),m1$S$original)
+  names(borg_df)<-c("Factor", "delta")
+  borg_df$Scenario<- FrWrk_type
+  
+  borg_df
+  
 }
 
-#What?
-IDIADAwear$C0 <- NULL
 
-# clean up rows with NA and calculated data
-IDIADAwear <- 
-  IDIADAwear |> separate(col = Tyre_brand,
-                         into =c("Tyre_brand", "Scenario"),
-                         sep = "     ")|> 
-  filter(!is.na(Wheel)) |> 
-  filter(Wheel != "Total") |> 
-  filter( Wheel != "Front") |> 
-  filter(Wheel != "Rear") 
-
-#Track to long format
-WearAsLong <- tidyr::pivot_longer(IDIADAwear, 
-                                  cols = names(IDIADAwear)[!names(IDIADAwear) %in% c("Tyre_brand","Wheel","Scenario")],
-                                  names_to = c("Shift","AbrasionTest"),
-                                  names_sep = "-",
-                                  values_to = "Abrasion_mg_km")
-
-WearAsLong <-
-  WearAsLong |> mutate(
-    AbrasionTest = 
-      AbrasionTest |> recode(
-        "Runin" = "Run-in",
-        "Rur" = "Rural",
-        "Mot" = "Motorway",
-        "Ur" = "Urban"
-      ),
-    Scenario = Scenario |> 
-      replace_na("Standard")
-  )
-
-WearAsLong <- # aggregate data per wheel to total per vehicle
-  WearAsLong |> ungroup() |> 
-  group_by(Tyre_brand ,Scenario ,Shift , AbrasionTest) |> 
-  summarise(Abrasion_mg_km = sum(Abrasion_mg_km),
-            nWheels = n())
-
-CombinedFW_TW <- 
-  left_join(WearAsLong,FWtotals, relationship = "many-to-many") |> 
-  mutate(AbrasionCoeff = Abrasion_mg_km / FW_p_km) |> # Calculate the abrasion coefficient
-  mutate(TestScenName = paste(Tyre_brand, Scenario, sep = "-"))
-
-
-
-# figure of tyre fricction work
 
 ```
 
 
-```{r figures standard scenarios}
-plot_theme = theme(
-  axis.title.x = element_text(size = 16),
-  axis.text = element_text(size = 14), 
-  axis.title.y = element_text(size = 16),
-  plot.background = element_rect(fill = 'white'),
-  panel.background = element_rect(fill = 'white'),
-  panel.grid.major = element_blank(),
-  panel.grid.minor = element_blank(),
-  axis.line = element_line(color='black'),
-  plot.margin = margin(1, 1, 1, 1, "cm")
-  #panel.grid.major = element_line(colour = "grey",size=0.25)
-)
+## 5. Global Sensitivity Analysis
+```{r}
+library(sensitivity)
+library(ks)
+# test
+FrWrk_type_combi <- c("FrictionWork_Long_pm", "FrictionWork_Latt_pm", "FrictionWork_pm","FrictionWork_7x_pm")
 
-FW_plot <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
-                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(TestScenName, FW_p_km))) +
-  geom_violin()+
-  # theme(legend.position="none")+
-  # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
-  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
-  # coord_flip() +
-  plot_theme +
-  labs(fill = "Tyre")
-FW_plot
+GSA_output1 <- GSA_helper (Prob_X=Prob_X, Prob_Y=TrackData_fw, 
+                           FrWrk_type=FrWrk_type_combi[1])
 
-ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
+for (i in 2:length(FrWrk_type_combi)){
+  GSA_output1 <- bind_rows(GSA_output1,
+                           GSA_helper (Prob_X=Prob_X, Prob_Y=TrackData_fw, 
+                                       FrWrk_type=FrWrk_type_combi[i]))
+}
 
+ggplot(GSA_output1, aes(x=Scenario, y=Factor, fill= delta)) + 
+  geom_tile()+labs(x = "Type of friction work")+
+  theme(axis.text.y = element_text(size = 8),axis.text.x = element_text(size = 8,angle = 45,hjust = 1)) 
 
-# Figure of abrasion measurements per tyre type tested
-plotdata <- CombinedFW_TW |> 
-  filter( Scenario == "Standard") |> ungroup() |> 
-  group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |> 
-  summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
-            n=n(),
-            sd=sd(Abrasion_mg_km))
-
-plotdata |> ungroup() |> 
-  group_by(Scenario , AbrasionTest , `Vehicle type`) |> 
-  summarise(            min = min(Abrasion_mg_km),
-                        p5 = quantile(Abrasion_mg_km, probs=0.05),
-                        AvgAbrasion_mg_km = mean(Abrasion_mg_km),
-                        p50 = quantile(Abrasion_mg_km, probs=0.5),
-                        p95 = quantile(Abrasion_mg_km, probs=0.95),
-                        max = max(Abrasion_mg_km),
-                        
-                        n_abr = n())
-ggplot(plotdata, 
-       aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
-  geom_boxplot() + 
-  geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
-             position = position_jitterdodge(jitter.width = 0.1,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-
-ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-
-ACplot1 <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
-             position = position_jitterdodge(jitter.width = 0.05,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-ACplot1
-ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-ACplot2 <- ggplot(filter(CombinedFW_TW, Scenario == "Standard"), 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
-  #                                                                      dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-ACplot2
-ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
 
 ```
-
-
-```{r figures all scenarios}
-
-####### Figures with all scenario's ########
-
-FW_plot <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = FW_p_km, fill=reorder(TestScenName, FW_p_km))) +
-  geom_violin()+
-  # theme(legend.position="none")+
-  # scale_y_log10(labels = scales::number_format()) +             # Log-transform y-axis
-  labs(x = "Abrasion test scenario", y = "Friction Work (J/km)") +                   # Adjust labels
-  # coord_flip() +
-  plot_theme +
-  labs(fill = "Tyre")
-FW_plot
-
-ggsave(paste0("figures/FrictionWork_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-
-plot
-
-# Figure of abrasion measurements per tyre type tested
-plotdata <- CombinedFW_TW |>  ungroup() |> 
-  group_by(Tyre_brand ,Scenario , Shift, AbrasionTest , `Vehicle type`,TestScenName) |> 
-  summarise(Abrasion_mg_km=mean(Abrasion_mg_km),
-            n=n(),
-            sd=sd(Abrasion_mg_km))
-
-ggplot(plotdata, 
-       aes(x = c(AbrasionTest), y = Abrasion_mg_km, colour=reorder(TestScenName, Abrasion_mg_km) )) +
-  geom_boxplot() + 
-  geom_point(aes(colour = reorder(TestScenName, Abrasion_mg_km)), 
-             position = position_jitterdodge(jitter.width = 0.1,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion rate (mg/km)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-
-ggsave(paste0("figures/AbrasionRate_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-
-ACplot1 <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  geom_point(aes(colour = reorder(TestScenName, AbrasionCoeff)), 
-             position = position_jitterdodge(jitter.width = 0.05,
-                                             dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-ACplot1
-ggsave(paste0("figures/AbrasionCoef1_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-ACplot2 <- ggplot(CombinedFW_TW, 
-                  aes(x = c(AbrasionTest), y = AbrasionCoeff, fill=reorder(TestScenName, AbrasionCoeff) )) +
-  geom_boxplot() +
-  # geom_point(aes(colour = TestScenName), position = position_jitterdodge(jitter.width = 0.05,
-  #                                                                      dodge.width = 0.75))+
-  labs(x = "Abrasion test scenario", y = "Abrasion Coeff (mg/J)", fill = "Tyre", colour = "Tyre") +                   # Adjust labels
-  
-  plot_theme 
-ACplot2
-ggsave(paste0("figures/AbrasionCoef2_AbrasionT_Tyre_HLT",format(Sys.time(),'%Y%m%d'),".png"),
-       width = 12, height = 6)
-
-```
-
