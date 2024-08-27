@@ -255,7 +255,7 @@ AllData <-
 ```{r  echo=FALSE, message=FALSE, warning=FALSE}
 AllData <-
   AllData |> unnest(cols = where(is.list))
-head(AllData)
+AllData
 ```
 
 
@@ -327,11 +327,13 @@ AllData <-
       )
   )
 
+head(AllData)
+
 ```
 
 ## 3. Total Slip
 
-```{r slip,  echo=FALSE, message=FALSE, warning=FALSE}
+```{r slip, echo=FALSE, message=FALSE, warning=FALSE}
 # add slipt to the data:
 
 AllData <-
@@ -421,7 +423,7 @@ AllData <-
       )
   )
 
-head(AllData)
+AllData
 
 ```
 
@@ -460,14 +462,14 @@ AllData_fw <-
 
 
 # Get bad runs:
-AllData_fw |> filter(ManeuverDistance < 0) # Runs where acceleration and/or deceleration takes longer than total distance are an artifact so should be removed
+# AllData_fw |> filter(ManeuverDistance < 0) # Runs where acceleration and/or deceleration takes longer than total distance are an artifact so should be removed
 
 bad_runs <- c(AllData_fw |> filter(ManeuverDistance < 0) |>  distinct(RUNS) |> pull(RUNS))
 AllData_fw <-
   AllData_fw |> filter(!(RUNS %in% bad_runs))
 
 ## FW per sector (Sum over maneuver number)
-AllData_fw |> distinct(`Sector name`)
+# AllData_fw |> distinct(`Sector name`)
 
 SectData_fw <- 
   AllData_fw |> ungroup() |> 
@@ -536,7 +538,7 @@ GSA_helper <- function(Prob_X, Prob_Y, FrWrk_type){
   
 }
 
-head(TrackData_fw)
+TrackData_fw
 
 
 ```
