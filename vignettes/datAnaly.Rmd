@@ -43,7 +43,7 @@ AirResist <- function (c_drag,
   pmax(0, c_drag * A_vehicle * rho_air * velocity_kmh^2)
 }
 
-TrackFilename <- "data/IDIADA track data/IDIDAsTables.xlsx" #/rivm/r/E121554 LEON-T/03 - uitvoering WP3/
+TrackFilename <- "data/hiddendata/IDIDAsTables.xlsx" #/rivm/r/E121554 LEON-T/03 - uitvoering WP3/
 Tracks <- openxlsx::getSheetNames(TrackFilename)
 #First separate General and read them all
 general <- openxlsx::read.xlsx(xlsxFile = TrackFilename, sheet = "general")
@@ -185,7 +185,7 @@ Read the wear data and cleaning
 ```{r}
 library(tidyr)
 library(openxlsx)
-IDIADAwear <- read.xlsx("data/IDIADA track data/Abrasion test_WP2.3_Leon-T_IDIADA.xlsx", startRow = 10)
+IDIADAwear <- read.xlsx("data/hiddendata/Abrasion test_WP2.3_Leon-T_IDIADA.xlsx", startRow = 10)
 #provide proper column names
 names(IDIADAwear)[c(1,2)] <- c("Tyre","Wheel")
 names(IDIADAwear) <- sapply(names(IDIADAwear), function(x){

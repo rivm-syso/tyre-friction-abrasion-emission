@@ -6,7 +6,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Estimating the tyre abrasion coefficient
+# Estimating the tyre abrasion coefficient [Simulation]
 
 1. First data on the maneuvers, track, vehicle, tyres and abrassion measurements need to be combined into a dataset for use further calculations.
 Then the following calculations are performed:
@@ -188,7 +188,6 @@ unique(CombinedFW_TW$AbrasionTest)
 # figure of tyre fricction work
 
 kData25 <-  CombinedFW_TW |> filter(AbrasionTest != "Run-in" & Scenario == "Standard") 
-
 # str(kData25)
 
 ```
