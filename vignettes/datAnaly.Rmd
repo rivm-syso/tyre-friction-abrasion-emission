@@ -2,7 +2,7 @@
 title: "Joule2Wear"
 author: "js"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
