@@ -4,5 +4,5 @@
 .Ruserdata
 data/hiddendata*
 figures/*
-results/*
+results*
 *.Rproj
