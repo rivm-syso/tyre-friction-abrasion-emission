@@ -5,4 +5,5 @@
 data/hiddendata*
 figures/*
 results*
+R/OLD_private*
 *.Rproj
