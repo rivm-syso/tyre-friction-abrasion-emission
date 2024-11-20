@@ -1,0 +1,369 @@
+---
+title: "Joule2Wear"
+author: "js"
+date: "`r Sys.Date()`"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Relate forces to wear
+Trying machine learning (random forest) to test the relation between forces on a car during a length of track and the amount of wear on the tyres, as measured by IDIADA. First set constants and prepare to calculate the forces given the track description. Also define a helper function. Roll coefficients of the tyres are mostly mission, the average velocity per section of the track is used as a proxy for the roll resistance. The end results are the aggragations of all sections for each track. Also the total distance is needed per section.
+
+```{r}
+#ThisData
+m_vehicle = 1644
+heavy_veh = 1868
+#Vehicle surface area in m^2
+A_vehicle = 2.629
+#Vehicle aerodynamic drag coefficient
+c_drag = 0.347
+### Gravitational constant in m.s^-2
+grav_constant = 9.81
+## Landscape data ##
+###Density of air in kg.m^-3
+rho_air = 1.205
+
+#'@param v_start Velocity at the start of the section of the track (m/s)
+#'@param v_end Acceleration time (s)
+#'@param dv Acceleration/Descelaration constant of the vehicle (m/s^2)
+dv_distance <- function(v_start, v_end, dv) {
+  dv_time <- abs((v_start-v_end)/dv)
+  v_start*dv_time+1/2*dv*dv_time^2
+}
+
+AirResist <- function (c_drag,
+          A_vehicle,
+          rho_air,
+          velocity_kmh
+          # v_wind #no data; circuit goes 360.. neglected
+        ) {
+  pmax(0, c_drag * A_vehicle * rho_air * velocity_kmh^2)
+}
+
+TrackFilename <- "data/hiddendata/IDIDAsTables.xlsx" #/rivm/r/E121554 LEON-T/03 - uitvoering WP3/
+Tracks <- openxlsx::getSheetNames(TrackFilename)
+#First separate General and read them all
+general <- openxlsx::read.xlsx(xlsxFile = TrackFilename, sheet = "general")
+TracksData <- list()
+TrackSumData <- list()
+for (Track in Tracks[Tracks != "general"]) {#Track = "rural5"
+  TracksData[[Track]] <- openxlsx::read.xlsx(TrackFilename, sheet = Track)
+  #km/h to m/s conversion
+  TracksData[[Track]]$velocity <- TracksData[[Track]]$velocity_kmh * 1000 / 3600
+  TracksData[[Track]]$start_velocity <- TracksData[[Track]]$start_velocity_kmh * 1000 / 3600
+}
+#TracksData
+finalNames <- c("distance", "velocity", "start_velocity", "corner_radius" )
+for (TrackName in names(TracksData)) {#TrackName = "urban2"
+  Track <- TracksData[[TrackName]]
+  #remove testTot, if needed
+  if ("testTot" %in% names(Track)) {
+    Track <- Track[,names(Track)[names(Track)!="testTot"]]
+  }
+  #1 expand sectionRepeat, if needed
+  if ("sectionRepeat" %in% names(Track)) {
+    Track$sectionRepeat[is.na(Track$sectionRepeat)] <- 1
+    SepRows <- lapply(1:nrow(Track), function(numline){ #numline = 1
+     cbind(as.data.frame(lapply(Track[numline,names(Track)[names(Track)!="sectionRepeat"]], rep, Track[numline,"sectionRepeat"]))) #
+    })
+    Track <- do.call(rbind,SepRows)
+  }
+  #2 repeat df, re-bind 
+  #Add0s <- T # add section to start and end at v = 0
+  TotTrack <- cbind(as.data.frame(lapply(Track, rep, general$repeats[general$TrackName == TrackName]))) #
+  # A exception 5*6 = 27 corrected in the last four rows for "rural6"
+  if (TrackName == "rural6"){
+    Aggr4 <- aggregate(distance ~ corner_radius + velocity , data = tail(TotTrack, 3), FUN = sum)
+    Aggr4$start_velocity = Aggr4$velocity
+    TotTrack <- rbind(head(TotTrack[, finalNames], nrow(TotTrack) - 3),
+                      Aggr4[, finalNames])
+  } else {
+    TotTrack <- TotTrack[,finalNames]
+  }
+  #3 acceleration decel distances; begin and end at 0
+  accellDist <- dv_distance(c(0,TotTrack$start_velocity), 
+                            c(TotTrack$start_velocity[1], TotTrack$velocity), 
+                            general$accel_ms2[general$TrackName == TrackName])
+  StartNext <- c(TotTrack$start_velocity[-1], 0)
+  descelDist <-  dv_distance(c(TotTrack$velocity), 
+                             StartNext, 
+                             - general$decel_ms2[general$TrackName == TrackName])
+  #correct and split for ascel distances
+  nwAscelRows <- which(accellDist[-1] > 0)
+  if (length(nwAscelRows) > 0) {
+    AscelDf <- data.frame(
+      distance = accellDist[-1][nwAscelRows],
+      velocity = (TotTrack$velocity[nwAscelRows] + TotTrack$start_velocity[nwAscelRows]) / 2, #mean
+      start_velocity = TotTrack$start_velocity[nwAscelRows],
+      corner_radius = TotTrack$corner_radius[nwAscelRows],
+      centrfac = 0, # no ascel in corners
+      accelleration = general$accel_ms2[general$TrackName == TrackName]
+    )
+    TotTrack$distance[nwAscelRows] <- TotTrack$distance[nwAscelRows] - AscelDf$distance
+  } else AscelDf <- NULL
+  nwDecelRows <-  which(descelDist > 0)
+  #the last is not in TotTrack, so
+  nwDecelRows <- nwDecelRows[nwDecelRows != nrow(TotTrack)]
+  if (length(nwDecelRows) > 0) {
+    DecelDf <- data.frame(
+      distance = descelDist[nwDecelRows],
+      velocity = (TotTrack$velocity[nwDecelRows] + TotTrack$start_velocity[nwDecelRows + 1]) / 2, #mean
+      start_velocity = TotTrack$start_velocity[nwDecelRows],
+      corner_radius = TotTrack$corner_radius[nwDecelRows],
+      centrfac = 0, # no descel in corners
+      accelleration = -general$decel_ms2[general$TrackName == TrackName]
+    )
+    TotTrack$distance[nwDecelRows] <- TotTrack$distance[nwDecelRows] - DecelDf$distance
+  } else DecelDf <- NULL
+  TotTrack$centrfac <- ifelse(TotTrack$corner_radius == 0, 0, TotTrack$velocity^2 / TotTrack$corner_radius)
+  TotTrack$accelleration <- 0
+  SectTrack <- rbind(
+    TotTrack[,c(finalNames, "accelleration", "centrfac")], 
+    AscelDf[,c(finalNames, "accelleration", "centrfac")], 
+    DecelDf[,c(finalNames, "accelleration", "centrfac")]
+  )
+  #check!
+  # :) sum(SectTrack$distance)
+  
+  row1 <- data.frame (
+    distance = accellDist[1],
+    velocity = TotTrack$velocity[1] / 2, #mean
+    start_velocity = 0,
+    centrfac = 0,
+    corner_radius = 0,
+    accelleration = general$accel_ms2[general$TrackName == TrackName]
+  )
+  lastrow <- data.frame (
+    distance = tail(descelDist,1),
+    velocity = tail(TotTrack$velocity, 1) / 2, #mean
+    start_velocity = tail(TotTrack$velocity, 1),
+    corner_radius = 0,
+    centrfac = 0,
+    accelleration = -general$decel_ms2[general$TrackName == TrackName]
+  )
+  SectTrack <- rbind(
+    row1[,names(SectTrack)],
+    SectTrack,
+    lastrow[,names(SectTrack)]
+  )
+  SumTrack <- aggregate(distance ~ velocity + centrfac + accelleration, 
+                        data = SectTrack,
+                        FUN = sum)
+  SumTrack$Track <- TrackName
+  TrackSumData[[TrackName]] <- SumTrack
+}
+TrackSum <- do.call(rbind, TrackSumData)
+DistSum <- aggregate(distance~Track, data = TrackSum, FUN = sum)
+TrackSum
+```
+Next step is to apply physics where we can. We postpone the multiplication by mass, this comes later when we deal with the tyre data and apply the right mass.
+```{r}
+#from f / mass + distance to J / mass.km
+perkmTrack <- list()
+for (TrackName in names(TrackSumData)){#TrackName = "RunIn" names(TrackSumData)[2]
+  TRfr <- TrackSumData[[TrackName]]
+  TRfr$duration <- TRfr$distance / TRfr$velocity
+  TotDistKm <- DistSum$distance[DistSum$Track == TrackName] 
+  TRfr$centrW_g_1 <- abs(TRfr$centrfac) * TRfr$duration / TotDistKm
+  TRfr$decelW_g_1 <- -min(0, TRfr$accelleration) * TRfr$duration / TotDistKm
+  TRfr$accelW_g_1 <- max(0, TRfr$accelleration) * TRfr$duration / TotDistKm
+  TRfr$airRes_Ac_1 <- AirResist(c_drag, A_vehicle, rho_air, velocity_kmh = TRfr$velocity) / TotDistKm
+  perkmTrack[[TrackName]] <- c(
+                  centrW_g_1 = sum(TRfr$centrW_g_1),
+                  decelW_g_1 = sum(TRfr$decelW_g_1),
+                  accelW_g_1 = sum(TRfr$accelW_g_1),
+                  airRes_Ac_1 = sum(TRfr$airRes_Ac_1)
+                  )
+}
+perkmTrack <- as.data.frame(do.call(rbind, perkmTrack))
+perkmTrack
+```
+Read the wear data and cleaning
+```{r}
+library(tidyr)
+library(openxlsx)
+IDIADAwear <- read.xlsx("data/hiddendata/Abrasion test_WP2.3_Leon-T_IDIADA.xlsx", startRow = 10)
+#provide proper column names
+names(IDIADAwear)[c(1,2)] <- c("Tyre","Wheel")
+names(IDIADAwear) <- sapply(names(IDIADAwear), function(x){
+  gsub("-", "_", x)
+})
+#extend Tyre to all its rows
+for(i in 1:nrow(IDIADAwear)){
+  if(is.na(IDIADAwear$Tyre[i])){
+    IDIADAwear$Tyre[i] <- IDIADAwear$Tyre[i-1]
+  }
+}
+#What?
+IDIADAwear$C0 <- NULL
+#Track to long format
+WearAsLong <- tidyr::pivot_longer(IDIADAwear, 
+                           cols = names(IDIADAwear)[!names(IDIADAwear) %in% c("Tyre","Wheel")], #,"Wheel"
+                           names_to = "track",
+                           values_to = "wear")
+WearAsLong$Wheel <- trimws(WearAsLong$Wheel)
+WearAsLong$Tyre <- gsub(" ", "", WearAsLong$Tyre)
+
+WearWheelsWideAgain <- tidyr::pivot_wider(WearAsLong, names_from = Wheel, values_from = wear)
+#Change Left/Right to Inner/Outer
+WearWheelsWideAgain$FInner <- ifelse(endsWith(WearWheelsWideAgain$track, "_Ur"), 
+                                     WearWheelsWideAgain$FL, WearWheelsWideAgain$FR)
+WearWheelsWideAgain$FOuter <- ifelse(endsWith(WearWheelsWideAgain$track, "_Ur"), 
+                                     WearWheelsWideAgain$FR, WearWheelsWideAgain$FL)
+WearWheelsWideAgain$RInner <- ifelse(endsWith(WearWheelsWideAgain$track, "_Ur"), 
+                                     WearWheelsWideAgain$RL, WearWheelsWideAgain$RR)
+WearWheelsWideAgain$ROuter <- ifelse(endsWith(WearWheelsWideAgain$track, "_Ur"), 
+                                     WearWheelsWideAgain$RR, WearWheelsWideAgain$RL)
+WearWheelsWideAgain$Front <- WearWheelsWideAgain$FR / WearWheelsWideAgain$FL
+WearWheelsWideAgain$Rear <- WearWheelsWideAgain$RR / WearWheelsWideAgain$RL
+#backtolong #1 for plot
+WearRLLong <- tidyr::pivot_longer(data = WearWheelsWideAgain, 
+                                  cols = c("Front", "Rear"), #,"Wheel"
+                                  names_to = "RL_ratio",
+                                  values_to = "wear")
+WearRLLong$RL_ratio <- factor(WearRLLong$RL_ratio, levels = c("Rear", "Front"))
+WearRLLong
+```
+
+There is something remarkable with the right rear wheel, even for the symmetrical urban 1 and urban 2 tracks, the ones where the car drives in an 8 shape. The LRatio = wear right wheel / wear left wheel. Values above one indicate a higher wear on the right wheel. 
+```{r}
+library(ggplot2)
+ggplot(data = WearRLLong[WearRLLong$track %in% c("T1_Ur", "T2_Ur") & WearRLLong$RL_ratio == "Rear",], aes(y = RL_ratio, x = wear, fill = RL_ratio)) +
+  geom_violin(trim = F) +
+  geom_boxplot(width = 0.1) +
+  geom_rug(length = unit(0.3, "npc") ) +
+  #geom_vline(xintercept = 1) +
+  labs(title = "Right/Left ratio", x = NULL, colour = NULL) +
+  facet_wrap(~track) +
+  coord_cartesian(xlim = c(0,2.5))
+ggsave("results/graphs/Ur8.pdf")
+```
+
+```{r}
+library(ggplot2)
+ggplot(data = WearWheelsWideAgain[WearWheelsWideAgain$track %in% c("T1_Ur", "T2_Ur") ,], aes(y = RL, x = RR)) +
+  geom_point() + geom_abline(slope=1, intercept=0) +
+  labs(title = "scatter left vs right") +
+  facet_wrap(~track)
+ggsave("results/graphs/Ur8.pdf")
+```
+
+```{r}
+library(ggplot2)
+ggplot(data = WearRLLong, aes(y = RL_ratio, x = wear, fill = RL_ratio)) +
+  geom_violin(trim = F) +
+  geom_boxplot(width = 0.1) +
+  geom_vline(xintercept = 1) +
+  labs(title = "Right/Left ratio", x = NULL, colour = NULL) +
+  facet_wrap(~track) +
+  coord_cartesian(xlim = c(0,2.5))
+ggsave("results/graphs/RLall.pdf")
+```
+
+Further preparations; we end up with 28 observations per track.
+
+```{r}
+#Back to long
+WearAsLong <- tidyr::pivot_longer(data = WearWheelsWideAgain, 
+                                  cols = c("FInner", "FOuter", "RInner", "ROuter"), #,"Wheel"
+                                  names_to = "Wheel",
+                                  values_to = "wear")
+#correct for T1_Ur and T2_Ur which are 8 shaped
+WearAsLong$Wheel[WearAsLong$track %in% c("T1_Ur", "T2_Ur") & startsWith(WearAsLong$Wheel, "F")] <- "Front"
+WearAsLong$Wheel[WearAsLong$track %in% c("T1_Ur", "T2_Ur") & startsWith(WearAsLong$Wheel, "R")] <- "Rear"
+
+#Potentially simplify
+WearAsLong$FrOrRear <- startsWith(WearAsLong$Wheel, "F")
+
+#Drop now superfluous columns 
+WearAsLong <- WearAsLong[,c("Tyre", "track", "wear", "Wheel", "FrOrRear")]
+Map2track <- unique(WearAsLong$track)
+table(WearAsLong$track)
+```
+First analyses, is there a trend for the runin wear?
+```{r}
+#strings to factor
+WearAsLong$Tyre <- as.factor(WearAsLong$Tyre)
+WearAsLong$Wheel <- as.factor(WearAsLong$Wheel)
+#WearAsLong$track <- as.factor(WearAsLong$track)
+
+#randomForest invest R1, R2, R3 trend?
+library(randomForest)
+rf <- randomForest(wear~ Tyre + track + FrOrRear,WearAsLong[WearAsLong$track %in% c("R1", "R2", "R3"),])
+varImpPlot(rf, main = paste("wear [mg/km] trend R123", "rsq =", round(mean(rf$rsq),2), "%"))
+rf <- randomForest(wear~track,WearAsLong[WearAsLong$track %in% c("R1", "R2", "R3"),])
+rsqList <- list("trend R123" = round(mean(rf$rsq),2))
+```
+But we remove R1 and R2 and assume the Runin was sufficient after R1 and R2; we need the data. Finalising preparations; relate the waer to the track data.
+```{r}
+#Remove the first 2 RunIn 
+WearAsLong <- WearAsLong[!WearAsLong$track %in% c("R1", "R2"),]
+general$AIname <- c("T1_Ur","T2_Ur","T3_Ur","T4_Ur","T1_Rur","T2_Rur","T3_Rur","T1_Mot", "R3")
+
+general <- cbind(general, perkmTrack)
+DFin <- merge(WearAsLong, general[, c("TrackType", "decel_ms2", "accel_ms2", "accelFrac", "decelFrac",
+              "mainSpeed", "mainCorner1dRadius", "maincornerSpeed", "CornerFraction", "breaks",
+              "distance","rotationpkm", "AIname", "centrW_g_1",
+              "decelW_g_1","accelW_g_1","airRes_Ac_1")], 
+              by.x = "track", by.y = "AIname")
+
+#involve the mass
+DFin$DecelJpKM <- ifelse(DFin$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFin$decelW_g_1
+DFin$AccelJpKM <- ifelse(DFin$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFin$accelW_g_1
+DFin$centrJpKM <- ifelse(DFin$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFin$centrW_g_1
+rf <- randomForest(wear~ DecelJpKM+AccelJpKM+centrJpKM+distance+TrackType+mainSpeed+FrOrRear, data = DFin)
+rsqList[["Mass with LingLongHighload"]] <- round(mean(rf$rsq),2)
+varImpPlot(rf, main = paste("wear [mg/km] variable importance", "rsq =", round(mean(rf$rsq),2), "%"))
+
+```
+Can we do it more simple: lump the forces into a single term?
+```{r}
+DFin$AccDecCrnTot <- DFin$AccelJpKM + DFin$DecelJpKM + DFin$centrJpKM
+rf <- randomForest(wear~ AccDecCrnTot+distance+TrackType+mainSpeed+FrOrRear, data = DFin)
+rsqList[["Mass with Highload; lumped F"]] <- round(mean(rf$rsq),2)
+varImpPlot(rf, main = paste("wear [mg/km] variable importance", "rsq =", round(mean(rf$rsq),2), "%"))
+
+```
+Or if we simplify by taking the average over the wheels?
+
+```{r}
+DFinAgg <- aggregate(wear~ Tyre + track, data = WearAsLong, FUN = mean)
+DFinAgg <- merge(DFinAgg, general[, c("TrackType", "decel_ms2", "accel_ms2", "accelFrac", "decelFrac",
+                              "mainSpeed", "mainCorner1dRadius", "maincornerSpeed", "CornerFraction", "breaks",
+                              "distance","rotationpkm", "AIname", "centrW_g_1",
+              "decelW_g_1","accelW_g_1","airRes_Ac_1")], 
+            by.x = "track", by.y = "AIname")
+#involve the mass again
+DFinAgg$DecelJpKM <- ifelse(DFinAgg$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFinAgg$decelW_g_1
+DFinAgg$AccelJpKM <- ifelse(DFinAgg$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFinAgg$accelW_g_1
+DFinAgg$centrJpKM <- ifelse(DFinAgg$Tyre == "LingLongHighload", heavy_veh, m_vehicle) * DFinAgg$centrW_g_1
+
+rf <- randomForest(wear~ DecelJpKM+centrJpKM+AccelJpKM+airRes_Ac_1+distance+TrackType+mainSpeed+Tyre, data = DFinAgg)
+rsqList[["Mass with Highload; avg wheels"]] <- round(mean(rf$rsq),2)
+varImpPlot(rf, main = paste("wear [mg/km] variable importance", "rsq =", round(mean(rf$rsq),2), "%"))
+
+```
+
+And on a bombshell, what if we ignore Mass, and ignore the longling variations?
+
+```{r}
+notin <- which(levels(DFin$Tyre) %in% c("LingLongHightemperature", "LingLongHighload"))
+rf <- randomForest(wear~ Tyre + centrW_g_1+decelW_g_1+accelW_g_1+airRes_Ac_1+distance+TrackType+mainSpeed+FrOrRear,
+                   data = DFin[!(as.numeric(DFin$Tyre) %in% notin),])
+#rf <- randomForest(wear~Tyre+centrW_g_1+decelW_g_1+accelW_g_1+airRes_Ac_1+distance+TrackType+mainSpeed+FrOrRear,
+#                   data = DFin)
+rsqList[["no Mass, no Highload, no HighTempeature"]] <- round(mean(rf$rsq),2)
+varImpPlot(rf, main = paste("wear [mg/km] variable importance", "rsq =", round(mean(rf$rsq),2), "%"))
+
+rf <- randomForest(wear~ Tyre+DecelJpKM+AccelJpKM+centrJpKM+accelW_g_1+distance+TrackType+mainSpeed+FrOrRear, 
+                   data = DFin[!(as.numeric(DFin$Tyre) %in% notin),])
+rsqList[["Mass, no Highload, no HighTempeature"]] <- round(mean(rf$rsq),2)
+
+```
+An overview of the r-squares:
+```{r}
+do.call(rbind, rsqList)
+```
