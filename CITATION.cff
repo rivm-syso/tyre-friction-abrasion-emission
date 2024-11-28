@@ -1,0 +1,25 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+ 
+cff-version: 1.2.0
+title: Tyre wear emission model based on friction
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: RIVM
+    address: P.O. Box 1
+    city: Bilthoven
+    country: NL
+    post-code: 3720 BA
+  - given-names: Johannes
+    family-names: Meesters
+    affiliation: RIVM
+  - given-names: 'Joris T.K. '
+    family-names: Quik
+    affiliation: RIVM
+    orcid: 'https://orcid.org/0000-0002-7964-3652'
+repository-code: >-
+https://github.com/rivm-syso/tyre-friction-abrasion-emission
+license: EUPL-1.2
