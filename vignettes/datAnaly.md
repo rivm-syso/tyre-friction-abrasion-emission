@@ -39,7 +39,7 @@ each track. Also the total distance is needed per section.
       pmax(0, c_drag * A_vehicle * rho_air * velocity_kmh^2)
     }
 
-    TrackFilename <- "data/hiddendata/IDIDAsTables.xlsx" #/rivm/r/E121554 LEON-T/03 - uitvoering WP3/
+    TrackFilename <- "data/hiddendata/IDIDAsTables.xlsx"
     Tracks <- openxlsx::getSheetNames(TrackFilename)
     #First separate General and read them all
     general <- openxlsx::read.xlsx(xlsxFile = TrackFilename, sheet = "general")
